@@ -8,6 +8,11 @@ namespace IL.AttributeBasedDI.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddServiceAttributeBasedDependencyInjection("*");
+    }
+
     public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection, params string[] assemblyFilters)
     {
         foreach (var solutionItemWildcard in assemblyFilters.AsSpan())
