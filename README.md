@@ -1,3 +1,4 @@
+[![NuGet version (IL.AttributBasedDI)](https://img.shields.io/nuget/v/IL.AttributBasedDI.svg?style=flat-square)](https://www.nuget.org/packages/IL.AttributBasedDI/)
 # IL.AttributeBasedDI
 Control dependencies via custom Service Attribute - extends Microsoft.Extensions.DependencyInjection
 
