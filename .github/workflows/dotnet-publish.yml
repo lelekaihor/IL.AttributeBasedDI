@@ -30,6 +30,9 @@ jobs:
       run: dotnet build --no-restore --configuration Release /p:Version=$VERSION
     - name: Pack NuGet package
       run: dotnet pack --configuration Release --output ./nupkg /p:PackageVersion=$VERSION
+      if: success() && github.ref_type == 'tag'      
+    - name: Publish NuGet package to GitHub Packages
+      run: dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/lelekaihor/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
       if: success() && github.ref_type == 'tag'
     - name: Publish NuGet package
       run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
