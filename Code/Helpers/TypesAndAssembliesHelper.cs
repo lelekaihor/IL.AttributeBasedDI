@@ -21,8 +21,8 @@ public static class TypesAndAssembliesHelper
                     return true;
                 }
 
-                var nameToMatch = assembly.GetName().Name;
-                return assemblyNames.Contains(nameToMatch!) || wildcardNames.Any(wildcard => IsWildcardMatch(nameToMatch!, wildcard));
+                var nameToMatch = assembly.GetName().Name!;
+                return assemblyNames.Contains(nameToMatch) || wildcardNames.Any(wildcard => IsWildcardMatch(nameToMatch, wildcard));
             })
             .ToArray();
 
@@ -63,6 +63,6 @@ public static class TypesAndAssembliesHelper
     /// </summary>
     private static bool IsWildcardMatch(string input, string wildcard)
     {
-        return input == wildcard || Regex.IsMatch(input, "^" + Regex.Escape(wildcard).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
+        return input == wildcard || Regex.IsMatch(input, $"^{Regex.Escape(wildcard).Replace("\\*", ".*").Replace("\\?", ".")}$", RegexOptions.IgnoreCase);
     }
 }

@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
         var typesWithAttributes = assemblies
             .Where(assembly => !assembly.IsDynamic)
             .SelectMany(TypesAndAssembliesHelper.GetExportedTypes)
-            .Where(type => !type.IsAbstract && !type.IsGenericTypeDefinition)
+            .Where(type => type is { IsAbstract: false, IsGenericTypeDefinition: false })
             .Select(type => new
             {
                 type.GetCustomAttribute<ServiceAttribute>()?.Lifetime,
