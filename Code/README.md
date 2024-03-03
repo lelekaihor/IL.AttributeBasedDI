@@ -11,7 +11,7 @@ Control dependencies and decorators via custom attributes - extends Microsoft.Ex
     * ServiceType - Specifies which service is target for DI registration. If left null/default service will be automatically retrieved either from first interface current class implements or the class itself will become a serviceType.
 * Use `[Decorator]` attribute for your classes with optional params for auto registration of decorator for specific service type in DI container:
     * ServiceType - Specifies which service is target for decoration. If left null/default service will be automatically resolved to first interface current class implements.
-    * DecorationLayer - Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order. And, respectively, decorator with highest DecorationOrder will be executed last.
+    * DecorationOrder - Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order. And, respectively, decorator with highest DecorationOrder will be executed last.
 
 ## Examples
 IService resolves to:
@@ -34,9 +34,9 @@ IService resolves to:
 [Service(serviceType: typeof(IService), lifetime: Lifetime.Singleton)]
 class SampleService : IService {}
 
-[Decorator(serviceType: typeof(IService), decorationLayer: 1)]
+[Decorator(serviceType: typeof(IService), decorationOrder: 1)]
 class DecoratorA : IService {}
 
-[Decorator(serviceType: typeof(IService), decorationLayer: 2)]
+[Decorator(serviceType: typeof(IService), decorationOrder: 2)]
 class DecoratorB : IService {}
 ```
