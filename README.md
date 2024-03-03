@@ -36,8 +36,20 @@ IService resolves to:
 class SampleService : IService {}
 
 [Decorator(serviceType: typeof(IService), decorationOrder: 1)]
-class DecoratorA : IService {}
+class DecoratorA : IService 
+{
+    public DecoratorA(IService service)
+    {
+        //IService service here is actually sample service
+    }
+}
 
 [Decorator(serviceType: typeof(IService), decorationOrder: 2)]
-class DecoratorB : IService {}
+class DecoratorB : IService 
+{
+    public DecoratorB(IService service)
+    {
+        //IService service here is actually decoratorA
+    }
+}
 ```
