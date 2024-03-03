@@ -11,9 +11,19 @@ public static class TypesAndAssembliesHelper
         var assemblyNames = new HashSet<string>(assemblyFilters.Where(filter => !filter.Contains('*')));
         var wildcardNames = assemblyFilters.Where(filter => filter.Contains('*')).ToArray();
 
-        var assemblies = AppDomain
-            .CurrentDomain
-            .GetAssemblies()
+        var allAssemblies = new HashSet<Assembly>();
+        allAssemblies.UnionWith(
+            Assembly
+                .GetCallingAssembly()
+                .GetReferencedAssemblies()
+                .Select(Assembly.Load));
+        allAssemblies.UnionWith(
+            AppDomain
+                .CurrentDomain
+                .GetAssemblies()
+        );
+
+        var assemblies = allAssemblies
             .Where(assembly =>
             {
                 if (!assemblyFilters.Any())
