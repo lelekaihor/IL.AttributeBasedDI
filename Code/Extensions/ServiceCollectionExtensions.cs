@@ -111,7 +111,7 @@ public static class ServiceCollectionExtensions
             .Select(type => new
             {
                 type.GetCustomAttribute<DecoratorAttribute>()!.DecorationOrder,
-                ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute<ServiceAttribute>(type),
+                ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute<DecoratorAttribute>(type),
                 DecoratorImplementationType = type
             })
             .OrderBy(x => x.DecorationOrder)
