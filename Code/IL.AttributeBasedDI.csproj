@@ -4,10 +4,10 @@
     <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.0.3</PackageVersion>
+    <PackageVersion>1.1.0</PackageVersion>
     <Title>Attribute Based Dependency Injection</Title>
     <Authors>Ihor Leleka</Authors>
-    <Description>Control dependencies via custom Service Attribute - extends Microsoft.Extensions.DependencyInjection.</Description>
+    <Description>Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection</Description>
     <Copyright>Ihor Leleka</Copyright>
     <PackageProjectUrl>https://github.com/lelekaihor/IL.AttributeBasedDI</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -20,6 +20,10 @@
   <ItemGroup>
     <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath="" />
     <None Include="README.md" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
