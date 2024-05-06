@@ -12,6 +12,7 @@ Control dependencies and decorators via custom attributes - extends Microsoft.Ex
 * Use `[Decorator]` attribute for your classes with optional params for auto registration of decorator for specific service type in DI container:
     * ServiceType - Specifies which service is target for decoration. If left null/default service will be automatically resolved to first interface current class implements.
     * DecorationOrder - Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order. And, respectively, decorator with highest DecorationOrder will be executed last.
+* Keyed Services and Decorators support! If you are using .NET 8 or higher it's possible to assign Keys to your services via corresponding attributes
 
 ## Examples
 IService resolves to:
@@ -51,4 +52,25 @@ class DecoratorB : IService
         //IService service here is actually decoratorA
     }
 }
+```
+## .NET 8 Examples
+
+`[FromKeyedServices("randomKey")]` resolves to:
+* SampleServiceDefault
+
+`[FromKeyedServices("testKey")]` resolves to:
+* DecoratorA
+    * wrapping a SampleService
+
+```
+[Service(Key="randomKey")]
+class SampleServiceDefault : IService {}
+
+[Service(Key="testKey")]
+class SampleService : IService {}
+
+[Decorator(Key="testKey")]
+class DecoratorA : IService {}
+
+public class Test([FromKeyedServices("randomKey")] IService randomSvc, [FromKeyedServices("testKey")] IService svc);
 ```

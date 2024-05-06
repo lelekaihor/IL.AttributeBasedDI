@@ -36,11 +36,18 @@ public static class ServiceCollectionExtensions
     {
         var serviceRegistrations = types
             .Where(type => type.GetCustomAttribute<ServiceAttribute>() != default)
-            .Select(type => new
+            .Select(type =>
             {
-                ServiceLifetime = type.GetCustomAttribute<ServiceAttribute>()!.Lifetime,
-                ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute<ServiceAttribute>(type),
-                ImplementationType = type
+                var attribute = type.GetCustomAttribute<ServiceAttribute>()!;
+                return new
+                {
+#if NET8_0_OR_GREATER
+                    attribute.Key,
+#endif
+                    ServiceLifetime = attribute.Lifetime,
+                    ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute<ServiceAttribute>(type),
+                    ImplementationType = type
+                };
             })
             .ToList();
 
@@ -48,29 +55,62 @@ public static class ServiceCollectionExtensions
         {
             if (serviceRegistrationEntry.ServiceType == null)
             {
-                serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ImplementationType, serviceRegistrationEntry.ServiceLifetime);
+                serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ImplementationType,
+                    serviceRegistrationEntry.ServiceLifetime,
+#if NET8_0_OR_GREATER
+                    serviceRegistrationEntry.Key);
+#else
+                    string.Empty);
+#endif
             }
             else
             {
-                serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ServiceType, serviceRegistrationEntry.ImplementationType,
-                    serviceRegistrationEntry.ServiceLifetime);
+                serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ServiceType,
+                    serviceRegistrationEntry.ImplementationType,
+                    serviceRegistrationEntry.ServiceLifetime,
+#if NET8_0_OR_GREATER
+                    serviceRegistrationEntry.Key);
+#else
+                    string.Empty);
+#endif
             }
         }
     }
 
-    private static void AddServiceWithLifetime(this IServiceCollection serviceCollection, Type type, Lifetime lifetime)
+    private static void AddServiceWithLifetime(this IServiceCollection serviceCollection, Type type, Lifetime lifetime, string? key)
     {
         switch (lifetime)
         {
             case Lifetime.Singleton:
+#if NET8_0_OR_GREATER
+                if (!string.IsNullOrEmpty(key))
+                {
+                    serviceCollection.AddKeyedSingleton(serviceType: type, key);
+                    break;
+                }
+#endif
                 serviceCollection.AddSingleton(type);
                 break;
 
             case Lifetime.Transient:
+#if NET8_0_OR_GREATER
+                if (!string.IsNullOrEmpty(key))
+                {
+                    serviceCollection.AddKeyedTransient(type, key);
+                    break;
+                }
+#endif
                 serviceCollection.AddTransient(type);
                 break;
 
             case Lifetime.Scoped:
+#if NET8_0_OR_GREATER
+                if (!string.IsNullOrEmpty(key))
+                {
+                    serviceCollection.AddKeyedScoped(type, key);
+                    break;
+                }
+#endif
                 serviceCollection.AddScoped(type);
                 break;
 
@@ -79,19 +119,40 @@ public static class ServiceCollectionExtensions
         }
     }
 
-    private static void AddServiceWithLifetime(this IServiceCollection serviceCollection, Type serviceType, Type implementationType, Lifetime lifetime)
+    private static void AddServiceWithLifetime(this IServiceCollection serviceCollection, Type serviceType, Type implementationType, Lifetime lifetime, string? key)
     {
         switch (lifetime)
         {
             case Lifetime.Singleton:
+#if NET8_0_OR_GREATER
+                if (!string.IsNullOrEmpty(key))
+                {
+                    serviceCollection.AddKeyedSingleton(serviceType, key, implementationType);
+                    break;
+                }
+#endif
                 serviceCollection.AddSingleton(serviceType, implementationType);
                 break;
 
             case Lifetime.Transient:
+#if NET8_0_OR_GREATER
+                if (!string.IsNullOrEmpty(key))
+                {
+                    serviceCollection.AddKeyedTransient(serviceType, key, implementationType);
+                    break;
+                }
+#endif
                 serviceCollection.AddTransient(serviceType, implementationType);
                 break;
 
             case Lifetime.Scoped:
+#if NET8_0_OR_GREATER
+                if (!string.IsNullOrEmpty(key))
+                {
+                    serviceCollection.AddKeyedScoped(serviceType, key, implementationType);
+                    break;
+                }
+#endif
                 serviceCollection.AddScoped(serviceType, implementationType);
                 break;
 
@@ -108,11 +169,18 @@ public static class ServiceCollectionExtensions
     {
         var serviceDecorations = types
             .Where(type => type.GetCustomAttribute<DecoratorAttribute>() != default)
-            .Select(type => new
+            .Select(type =>
             {
-                type.GetCustomAttribute<DecoratorAttribute>()!.DecorationOrder,
-                ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute<DecoratorAttribute>(type),
-                DecoratorImplementationType = type
+                var decoratorAttribute = type.GetCustomAttribute<DecoratorAttribute>()!;
+                return new
+                {
+#if NET8_0_OR_GREATER
+                    decoratorAttribute.Key,
+#endif
+                    decoratorAttribute.DecorationOrder,
+                    ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute<DecoratorAttribute>(type),
+                    DecoratorImplementationType = type
+                };
             })
             .OrderBy(x => x.DecorationOrder)
             .ToList();
@@ -121,41 +189,87 @@ public static class ServiceCollectionExtensions
         {
             if (serviceDecorationEntry.ServiceType == null)
             {
-                throw new InvalidOperationException($"Can't determine service to decorate. Decorator type: {serviceDecorationEntry.DecoratorImplementationType.FullName}");
+                throw new InvalidOperationException(
+                    $"Can't determine service to decorate. Decorator type: {serviceDecorationEntry.DecoratorImplementationType.FullName}");
             }
 
-            serviceCollection.AddDecoratorForService(serviceDecorationEntry.ServiceType, serviceDecorationEntry.DecoratorImplementationType);
+            serviceCollection.AddDecoratorForService(serviceDecorationEntry.ServiceType,
+                serviceDecorationEntry.DecoratorImplementationType,
+#if NET8_0_OR_GREATER
+                serviceDecorationEntry.Key);
+#else
+                string.Empty);
+#endif
         }
     }
 
     //Credits to https://greatrexpectations.com/2018/10/25/decorators-in-net-core-with-dependency-injection
-    private static void AddDecoratorForService(this IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType)
+    private static void AddDecoratorForService(this IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType, string? key)
     {
         var objectFactory = ActivatorUtilities.CreateFactory(
             decoratorImplementationType,
             new[] { serviceType });
 
         var descriptorsToDecorate = serviceCollection
-            .Where(s => s.ServiceType == serviceType)
+            .Where(s =>
+            {
+               var valid =  s.ServiceType == serviceType;
+#if NET8_0_OR_GREATER
+               if (!string.IsNullOrEmpty(key))
+               {
+                   valid = s.ServiceKey?.ToString() == key;
+               }
+#endif
+               return valid;
+            })
             .ToList();
 
         if (descriptorsToDecorate.Count == 0)
         {
-            throw new InvalidOperationException($"No services registered for type {serviceType} in ServiceCollection, Decoration is impossible.");
+            throw new InvalidOperationException(
+                $"No services registered for type {serviceType} in ServiceCollection, Decoration is impossible.");
         }
 
         foreach (var descriptor in CollectionsMarshal.AsSpan(descriptorsToDecorate))
         {
+#if NET8_0_OR_GREATER
+            serviceCollection.Replace(!string.IsNullOrEmpty(key)
+                ? ServiceDescriptor.DescribeKeyed(
+                    serviceType,
+                    key,
+                    (serviceProvider, _) => objectFactory(serviceProvider, [serviceProvider.CreateInstance(descriptor)]),
+                    descriptor.Lifetime
+                )
+                : ServiceDescriptor.Describe(
+                    serviceType,
+                    implementationFactory => objectFactory(implementationFactory, [implementationFactory.CreateInstance(descriptor)]),
+                    descriptor.Lifetime)
+            );
+#else
             serviceCollection.Replace(ServiceDescriptor.Describe(
                 serviceType,
                 implementationFactory => objectFactory(implementationFactory, new[] { implementationFactory.CreateInstance(descriptor) }),
                 descriptor.Lifetime)
             );
+#endif
         }
     }
 
     private static object CreateInstance(this IServiceProvider serviceProvider, ServiceDescriptor serviceDescriptor)
     {
+#if NET8_0_OR_GREATER
+        return serviceDescriptor switch
+        {
+            { IsKeyedService: true, KeyedImplementationInstance: not null } => serviceDescriptor.KeyedImplementationInstance,
+            { IsKeyedService: true, KeyedImplementationFactory: not null } => serviceDescriptor.KeyedImplementationFactory(serviceProvider, serviceDescriptor.ServiceKey),
+            { IsKeyedService: true, KeyedImplementationInstance: null, KeyedImplementationFactory: null } => ActivatorUtilities.GetServiceOrCreateInstance(serviceProvider, serviceDescriptor.KeyedImplementationType!),
+
+            { IsKeyedService: false, ImplementationInstance: not null } => serviceDescriptor.ImplementationInstance,
+            { IsKeyedService: false, ImplementationFactory: not null } => serviceDescriptor.ImplementationFactory(serviceProvider),
+            _ => ActivatorUtilities.GetServiceOrCreateInstance(serviceProvider, serviceDescriptor.ImplementationType!)
+        };
+
+#else
         if (serviceDescriptor.ImplementationInstance != null)
         {
             return serviceDescriptor.ImplementationInstance;
@@ -167,6 +281,7 @@ public static class ServiceCollectionExtensions
         }
 
         return ActivatorUtilities.GetServiceOrCreateInstance(serviceProvider, serviceDescriptor.ImplementationType!);
+#endif
     }
 
     #endregion DecoratorAttribute
@@ -180,7 +295,9 @@ public static class ServiceCollectionExtensions
             return default;
         }
 
-        return dependencyInjectionAttributeBase.FindServiceTypeAutomatically ? ExtractServiceTypeFromInterfaces(sourceType) : dependencyInjectionAttributeBase.ServiceType;
+        return dependencyInjectionAttributeBase.FindServiceTypeAutomatically
+            ? ExtractServiceTypeFromInterfaces(sourceType)
+            : dependencyInjectionAttributeBase.ServiceType;
     }
 
     private static Type? ExtractServiceTypeFromInterfaces(Type sourceType)
