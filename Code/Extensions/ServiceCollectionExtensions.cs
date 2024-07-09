@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using IL.AttributeBasedDI.Attributes;
-using IL.AttributeBasedDI.Helpers;
+using IL.Misc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
