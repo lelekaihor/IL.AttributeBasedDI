@@ -4,7 +4,11 @@
 /// Attribute for reflection based class detection and registration in Microsoft DI container.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+#if NET7_0_OR_GREATER
+public class ServiceAttribute : DependencyInjectionAttributeBase
+#else
 public sealed class ServiceAttribute : DependencyInjectionAttributeBase
+#endif
 {
 
 #if NET8_0_OR_GREATER
