@@ -16,7 +16,7 @@ public class ServiceTestOptions : IServiceConfiguration
     public string Option1 { get; set; } = "test123";
 }
 
-[ServiceAttributeWithOptions<ServiceTestOptions>(Lifetime = Lifetime.Singleton)]
+[ServiceWithOptions<ServiceTestOptions>(Lifetime = Lifetime.Singleton)]
 public class TestServiceWithOptions
 {
     private readonly ServiceTestOptions _serviceConfiguration;
@@ -36,7 +36,7 @@ public class ServiceTestOptions1 : IServiceConfiguration
     public string Option1 { get; set; } = "test123";
 }
 
-[ServiceAttributeWithOptions<ServiceTestOptions1>(Lifetime = Lifetime.Singleton)]
+[ServiceWithOptions<ServiceTestOptions1>(Lifetime = Lifetime.Singleton)]
 public class TestServiceWithOptions1
 {
     private readonly ServiceTestOptions1 _serviceConfiguration;

@@ -7,7 +7,7 @@ internal interface IAttributeWithOptionsConfigurationPath
     public string? ConfigurationPath { get; }
 }
 
-public sealed class ServiceAttributeWithOptions<T> : ServiceAttribute, IAttributeWithOptionsConfigurationPath where T : class, IServiceConfiguration, new()
+public sealed class ServiceWithOptionsAttribute<T> : ServiceAttribute, IAttributeWithOptionsConfigurationPath where T : class, IServiceConfiguration, new()
 {
     public string? ConfigurationPath => T.ConfigurationPath;
 }

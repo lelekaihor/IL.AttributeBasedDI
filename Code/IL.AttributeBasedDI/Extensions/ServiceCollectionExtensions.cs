@@ -97,10 +97,10 @@ public static class ServiceCollectionExtensions
     private static void RegisterClassesWithServiceAttributeWithOptionsInAssemblies(this IServiceCollection serviceCollection, IConfiguration? configuration = null, params Type[] types)
     {
         var serviceRegistrations = types
-            .Where(type => type.GetCustomAttribute(typeof(ServiceAttributeWithOptions<>)) != default)
+            .Where(type => type.GetCustomAttribute(typeof(ServiceWithOptionsAttribute<>)) != default)
             .Select(type =>
             {
-                var attribute = type.GetCustomAttribute(typeof(ServiceAttributeWithOptions<>));
+                var attribute = type.GetCustomAttribute(typeof(ServiceWithOptionsAttribute<>));
                 var configurationPathBase = attribute as IAttributeWithOptionsConfigurationPath;
                 var configurationPath = configurationPathBase!.ConfigurationPath ?? string.Empty;
                 var genericTypeUsedOnAttributeDeclaration = attribute!.GetType().GetGenericArguments().First();
