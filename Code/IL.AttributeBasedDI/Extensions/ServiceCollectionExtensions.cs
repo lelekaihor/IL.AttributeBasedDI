@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using IL.AttributeBasedDI.Attributes;
+using IL.AttributeBasedDI.Models;
 using IL.Misc.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,13 +23,14 @@ public static class ServiceCollectionExtensions
             serviceCollection.RegisterClassesWithServiceAttributeAndDecorators(default, solutionItemWildcard);
         }
     }
-    
+
     public static void AddServiceAttributeBasedDependencyInjectionWithOptions(this IServiceCollection serviceCollection, IConfiguration configuration)
     {
         serviceCollection.AddServiceAttributeBasedDependencyInjectionWithOptions(configuration, "*");
     }
-    
-    public static void AddServiceAttributeBasedDependencyInjectionWithOptions(this IServiceCollection serviceCollection, IConfiguration configuration, params string[] assemblyFilters)
+
+    public static void AddServiceAttributeBasedDependencyInjectionWithOptions(this IServiceCollection serviceCollection, IConfiguration configuration,
+        params string[] assemblyFilters)
     {
         foreach (var solutionItemWildcard in assemblyFilters.AsSpan())
         {
@@ -36,7 +38,8 @@ public static class ServiceCollectionExtensions
         }
     }
 
-    private static void RegisterClassesWithServiceAttributeAndDecorators(this IServiceCollection serviceCollection, IConfiguration? configuration = null, params string[] assemblyFilters)
+    private static void RegisterClassesWithServiceAttributeAndDecorators(this IServiceCollection serviceCollection, IConfiguration? configuration = null,
+        params string[] assemblyFilters)
     {
         var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
         var allTypes = GetAllTypesFromAssemblies(assemblies);
@@ -52,20 +55,20 @@ public static class ServiceCollectionExtensions
     private static void RegisterClassesWithServiceAttributeInAssemblies(this IServiceCollection serviceCollection, params Type[] types)
     {
         var serviceRegistrations = types
-            .Where(type => type.GetCustomAttribute<ServiceAttribute>() != default)
-            .Select(type =>
-            {
-                var attribute = type.GetCustomAttribute<ServiceAttribute>()!;
-                return new
-                {
+            .Where(type => type.GetCustomAttributes<ServiceAttribute>().Any())
+            .SelectMany(type =>
+                type
+                    .GetCustomAttributes<ServiceAttribute>()
+                    .Select(attribute => new RegistrationEntry
+                    {
 #if NET8_0_OR_GREATER
-                    attribute.Key,
+                        Key = attribute.Key,
 #endif
-                    ServiceLifetime = attribute.Lifetime,
-                    ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute(type, attribute),
-                    ImplementationType = type
-                };
-            })
+                        ServiceLifetime = attribute.Lifetime,
+                        ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute(type, attribute),
+                        ImplementationType = type
+                    })
+            )
             .ToList();
 
         foreach (var serviceRegistrationEntry in CollectionsMarshal.AsSpan(serviceRegistrations))
@@ -94,33 +97,38 @@ public static class ServiceCollectionExtensions
         }
     }
 #if NET7_0_OR_GREATER
-    private static void RegisterClassesWithServiceAttributeWithOptionsInAssemblies(this IServiceCollection serviceCollection, IConfiguration? configuration = null, params Type[] types)
+    private static void RegisterClassesWithServiceAttributeWithOptionsInAssemblies(this IServiceCollection serviceCollection, IConfiguration? configuration = null,
+        params Type[] types)
     {
         var serviceRegistrations = types
-            .Where(type => type.GetCustomAttribute(typeof(ServiceWithOptionsAttribute<>)) != default)
-            .Select(type =>
+            .Where(type => type.GetCustomAttributes(typeof(ServiceWithOptionsAttribute<>)).Any())
+            .SelectMany(type =>
             {
-                var attribute = type.GetCustomAttribute(typeof(ServiceWithOptionsAttribute<>));
-                var configurationPathBase = attribute as IAttributeWithOptionsConfigurationPath;
-                var configurationPath = configurationPathBase!.ConfigurationPath ?? string.Empty;
-                var genericTypeUsedOnAttributeDeclaration = attribute!.GetType().GetGenericArguments().First();
-                var instance = Activator.CreateInstance(genericTypeUsedOnAttributeDeclaration);
-                if (!string.IsNullOrEmpty(configurationPath) && configuration != default)
-                {
-                    configuration.GetSection(configurationPath).Bind(instance);
-                }
-                serviceCollection.AddSingleton(genericTypeUsedOnAttributeDeclaration, instance!);
+                return type
+                    .GetCustomAttributes(typeof(ServiceWithOptionsAttribute<>))
+                    .Select(attribute =>
+                    {
+                        var configurationPathBase = attribute as IAttributeWithOptionsConfigurationPath;
+                        var configurationPath = configurationPathBase!.ConfigurationPath ?? string.Empty;
+                        var genericTypeUsedOnAttributeDeclaration = attribute.GetType().GetGenericArguments().First();
+                        var instance = Activator.CreateInstance(genericTypeUsedOnAttributeDeclaration);
+                        if (!string.IsNullOrEmpty(configurationPath) && configuration != default)
+                        {
+                            configuration.GetSection(configurationPath).Bind(instance);
+                        }
 
-                var @base = attribute as ServiceAttribute;
-                return new
-                {
+                        serviceCollection.AddSingleton(genericTypeUsedOnAttributeDeclaration, instance!);
+                        var @base = attribute as ServiceAttribute;
+                        return new RegistrationEntry
+                        {
 #if NET8_0_OR_GREATER
-                    @base!.Key,
+                            Key = @base!.Key,
 #endif
-                    ServiceLifetime = @base!.Lifetime,
-                    ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute(type, @base),
-                    ImplementationType = type
-                };
+                            ServiceLifetime = @base!.Lifetime,
+                            ServiceType = GetServiceTypeBasedOnDependencyInjectionAttribute(type, @base),
+                            ImplementationType = type
+                        };
+                    });
             })
             .ToList();
 

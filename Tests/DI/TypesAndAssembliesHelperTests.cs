@@ -7,6 +7,7 @@ namespace IL.AttributeBasedDI.Tests.DI;
 #if NET8_0_OR_GREATER
 
 [Service(Key = "test")]
+[Service(Key = "secondaryKeyForTest")]
 //#############################################
 public sealed class TestClass;
 
@@ -111,6 +112,7 @@ public class DiTests
 
         // Assert
         Assert.NotNull(sp.GetRequiredKeyedService<TestClass>("test"));
+        Assert.NotNull(sp.GetRequiredKeyedService<TestClass>("secondaryKeyForTest"));
     }
 
     [Fact]
