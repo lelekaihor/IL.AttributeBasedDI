@@ -15,7 +15,7 @@ public sealed class DecoratorAttribute : DependencyInjectionAttributeBase
     /// <param name="decorationOrder">Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order.
     /// And, respectively, decorator with highest DecorationOrder will be executed last.</param>
     /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
-    public DecoratorAttribute(Type? serviceType = default, int decorationOrder = 1, string? key = default)
+    public DecoratorAttribute(Type? serviceType = null, int decorationOrder = 1, string? key = null)
     {
         ServiceType = serviceType;
         DecorationOrder = decorationOrder < 1 ? 1 : decorationOrder;
@@ -29,7 +29,7 @@ public sealed class DecoratorAttribute : DependencyInjectionAttributeBase
     /// If left null/default service will be automatically resolved to first interface current class implements.</param>
     /// <param name="decorationOrder">Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order.
     /// And, respectively, decorator with highest DecorationOrder will be executed last.</param>
-    public DecoratorAttribute(Type? serviceType = default, int decorationOrder = 1)
+    public DecoratorAttribute(Type? serviceType = null, int decorationOrder = 1)
     {
         ServiceType = serviceType;
         DecorationOrder = decorationOrder < 1 ? 1 : decorationOrder;

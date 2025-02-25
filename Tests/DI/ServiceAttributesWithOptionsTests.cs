@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace IL.AttributeBasedDI.Tests.DI;
 #if NET7_0_OR_GREATER
@@ -21,9 +22,9 @@ public class TestServiceWithOptions
 {
     private readonly ServiceTestOptions _serviceConfiguration;
 
-    public TestServiceWithOptions(ServiceTestOptions options)
+    public TestServiceWithOptions(IOptions<ServiceTestOptions> options)
     {
-        _serviceConfiguration = options;
+        _serviceConfiguration = options.Value;
     }
 
     public string GetOption1Value() => _serviceConfiguration.Option1;
@@ -31,7 +32,7 @@ public class TestServiceWithOptions
 
 public class ServiceTestOptions1 : IServiceConfiguration
 {
-    static string? IServiceConfiguration.ConfigurationPath => default;
+    static string? IServiceConfiguration.ConfigurationPath => null;
 
     public string Option1 { get; set; } = "test123";
 }
@@ -41,9 +42,9 @@ public class TestServiceWithOptions1
 {
     private readonly ServiceTestOptions1 _serviceConfiguration;
 
-    public TestServiceWithOptions1(ServiceTestOptions1 options)
+    public TestServiceWithOptions1(IOptions<ServiceTestOptions1> options)
     {
-        _serviceConfiguration = options;
+        _serviceConfiguration = options.Value;
     }
 
     public string GetOption1Value() => _serviceConfiguration.Option1;

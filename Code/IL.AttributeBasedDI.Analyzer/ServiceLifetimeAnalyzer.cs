@@ -107,7 +107,7 @@ public class ServiceLifetimeAnalyzer : DiagnosticAnalyzer
                      .SelectMany(constructor => constructor
                          .Parameters
                          .Select(parameter => parameter.Type as INamedTypeSymbol)
-                         .Where(parameterType => parameterType != default)
+                         .Where(parameterType => parameterType != null)
                          .Select(x => new
                              {
                                  OriginalType = x,
