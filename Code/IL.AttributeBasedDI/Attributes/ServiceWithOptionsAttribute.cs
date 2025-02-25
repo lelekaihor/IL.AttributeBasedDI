@@ -1,14 +1,20 @@
+using IL.AttributeBasedDI.Models;
 using IL.AttributeBasedDI.Options;
 
 namespace IL.AttributeBasedDI.Attributes;
-#if NET7_0_OR_GREATER
+
 internal interface IAttributeWithOptionsConfigurationPath
 {
     public string? ConfigurationPath { get; }
 }
 
-public sealed class ServiceWithOptionsAttribute<T> : ServiceAttribute, IAttributeWithOptionsConfigurationPath where T : class, IServiceConfiguration, new()
+public sealed class ServiceWithOptionsAttribute<T> : ServiceWithOptionsAttribute<T, FeaturesNoop> where T : class, IServiceConfiguration, new()
+{
+}
+
+public class ServiceWithOptionsAttribute<T, TFeatureFlag> : ServiceAttribute<TFeatureFlag>, IAttributeWithOptionsConfigurationPath
+    where T : class, IServiceConfiguration, new()
+    where TFeatureFlag : struct, Enum
 {
     public string? ConfigurationPath => T.ConfigurationPath;
 }
-#endif

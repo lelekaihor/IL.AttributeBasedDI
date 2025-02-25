@@ -10,47 +10,46 @@ namespace IL.AttributeBasedDI.Extensions;
 
 internal static class ServiceWithOptionsAttributeRegistration
 {
-#if NET7_0_OR_GREATER
-    public static void RegisterClassesWithServiceAttributesWithOptions(this IServiceCollection serviceCollection, IConfiguration? configuration = null,
-        params Type[] types)
+    public static void RegisterClassesWithServiceAttributesWithOptions<TFeatureFlag>(this IServiceCollection serviceCollection,
+        TFeatureFlag activeFeatures,
+        IConfiguration? configuration = null,
+        params Type[] types) where TFeatureFlag : struct, Enum
     {
         var serviceRegistrations = types
-            .Where(type => type.GetCustomAttributes(typeof(ServiceWithOptionsAttribute<>)).Any())
+            .Where(type => type.GetCustomAttributes(typeof(ServiceWithOptionsAttribute<,>)).Any())
             .SelectMany(type =>
             {
                 return type
-                    .GetCustomAttributes(typeof(ServiceWithOptionsAttribute<>))
+                    .GetCustomAttributes(typeof(ServiceWithOptionsAttribute<,>))
                     .Select(attribute =>
                     {
-                        RegisterOptionsFromAttribute(serviceCollection, configuration, attribute);
-                        var @base = attribute as ServiceAttribute;
-                        return @base!.ToRegistrationEntry(type);
+                        var @base = attribute as ServiceAttribute<TFeatureFlag>;
+                        if (@base != null)
+                        {
+                            RegisterOptionsFromAttribute(serviceCollection, configuration, attribute);
+                        }
+
+                        return @base?.ToRegistrationEntry(type);
                     });
             })
+            .Where(x => x != null && FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
             .ToList();
 
         foreach (var serviceRegistrationEntry in CollectionsMarshal.AsSpan(serviceRegistrations))
         {
-            if (serviceRegistrationEntry.ServiceType == null)
+            if (serviceRegistrationEntry!.ServiceType == null)
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ImplementationType,
+                    null,
                     serviceRegistrationEntry.ServiceLifetime,
-#if NET8_0_OR_GREATER
                     serviceRegistrationEntry.Key);
-#else
-                    string.Empty);
-#endif
             }
             else
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ServiceType,
                     serviceRegistrationEntry.ImplementationType,
                     serviceRegistrationEntry.ServiceLifetime,
-#if NET8_0_OR_GREATER
                     serviceRegistrationEntry.Key);
-#else
-                    string.Empty);
-#endif
             }
         }
     }
@@ -72,13 +71,13 @@ internal static class ServiceWithOptionsAttributeRegistration
         var configurationPathBase = attribute as IAttributeWithOptionsConfigurationPath;
         var configurationPath = configurationPathBase!.ConfigurationPath ?? string.Empty;
         var genericTypeUsedOnAttributeDeclaration = attribute.GetType().GetGenericArguments().First();
+        var configurationSection = configuration?.GetSection(configurationPath);
 
-        if (!string.IsNullOrEmpty(configurationPath) && configuration != null)
+        if (!string.IsNullOrEmpty(configurationPath) && configurationSection != null)
         {
             ConfigureMethod
                 .MakeGenericMethod(genericTypeUsedOnAttributeDeclaration)
-                .Invoke(null, new object[] { serviceCollection, configuration.GetSection(configurationPath) });
+                .Invoke(null, [serviceCollection, configurationSection]);
         }
     }
-#endif
 }

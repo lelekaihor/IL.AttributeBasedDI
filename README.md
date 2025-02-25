@@ -1,38 +1,68 @@
 [![NuGet version (IL.AttributeBasedDI)](https://img.shields.io/nuget/v/IL.AttributeBasedDI.svg?style=flat-square)](https://www.nuget.org/packages/IL.AttributeBasedDI/)
 # IL.AttributeBasedDI
-Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection
+Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection.
 
-# How to use
+> **Note:** Starting from version **2.0.0**, only **.NET 8 or higher** is supported.
 
-* Simply reference IL.AttributeBasedDI in your project
-* Use registration extensions coming with library to activate functionality: `(IServiceCollection)services.AddServiceAttributeBasedDependencyInjection()` or `(WebApplicationBuilder)builder.AddServiceAttributeBasedDependencyInjection()`
-    * Allows to filter assemblies reflection search with optional parameter `assemblyFilters` ("MyProject.*" for example)
-* Use `[Service]` attribute for your classes with optional params for auto registration in DI container: 
-    * Lifetime - to define current service registration lifetime
-    * ServiceType - Specifies which service is target for DI registration. If left null/default service will be automatically retrieved either from first interface current class implements or the class itself will become a serviceType.
-* Use `[Decorator]` attribute for your classes with optional params for auto registration of decorator for specific service type in DI container:
-    * ServiceType - Specifies which service is target for decoration. If left null/default service will be automatically resolved to first interface current class implements.
-    * DecorationOrder - Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order. And, respectively, decorator with highest DecorationOrder will be executed last.
-* Keyed Services and Decorators support! If you are using .NET 8 or higher it's possible to assign Keys to your services via corresponding attributes
+---
 
-## Examples
-IService resolves to:
-* DecoratorA
-    * wrapping a SampleService
+# How to Use
 
-```
+1. Reference `IL.AttributeBasedDI` in your project.
+2. Use the registration extensions provided by the library to activate functionality:
+   - `services.AddServiceAttributeBasedDependencyInjection()` for `IServiceCollection`.
+   - `builder.AddServiceAttributeBasedDependencyInjection()` for `WebApplicationBuilder`.
+3. Optionally, filter assemblies for reflection search using the `assemblyFilters` parameter (e.g., `"MyProject.*"`).
+
+---
+
+# Attributes
+
+## `[Service]`
+Use this attribute to automatically register classes in the DI container.
+
+### Parameters:
+- **Lifetime**: Defines the service registration lifetime (`Singleton`, `Scoped`, or `Transient`).
+- **ServiceType**: Specifies the service type for DI registration. If `null`, the service type is automatically resolved:
+  - From the first interface the class implements, or
+  - The class itself if no interfaces are implemented.
+- **Key** (`.NET 8+`): Specifies a key for keyed service registration.
+- **Feature** (optional): Specifies a feature flag to conditionally register the service.
+
+---
+
+## `[Decorator]`
+Use this attribute to automatically register decorators for specific services.
+
+### Parameters:
+- **ServiceType**: Specifies the service type to decorate. If `null`, the service type is automatically resolved from the first interface the class implements.
+- **DecorationOrder**: Defines the order of decoration. Lower values are closer to the original implementation in the execution chain.
+- **Key** (`.NET 8+`): Specifies a key for keyed decorator registration.
+- **Feature** (optional): Specifies a feature flag to conditionally register the decorator.
+
+---
+
+# Examples
+
+## Basic Usage
+
+### IService resolves to:
+- `DecoratorA`
+  - Wrapping `SampleService`
+
+```csharp
 [Service]
 class SampleService : IService {}
 
 [Decorator]
 class DecoratorA : IService {}
 ```
-IService resolves to:
-* DecoratorB
-    * wrapping a DecoratorA
-        * wrapping a SampleService
+### IService resolves to:
+- `DecoratorB`
+    - `Wrapping DecoratorA`
+        - `Wrapping SampleService`
 
-```
+```csharp
 [Service(serviceType: typeof(IService), lifetime: Lifetime.Singleton)]
 class SampleService : IService {}
 
@@ -41,7 +71,7 @@ class DecoratorA : IService
 {
     public DecoratorA(IService service)
     {
-        //IService service here is actually sample service
+        // `service` here is actually `SampleService`
     }
 }
 
@@ -50,28 +80,86 @@ class DecoratorB : IService
 {
     public DecoratorB(IService service)
     {
-        //IService service here is actually decoratorA
+        // `service` here is actually `DecoratorA`
     }
 }
 ```
-## .NET 8 Examples
 
-`[FromKeyedServices("randomKey")]` resolves to:
-* SampleServiceDefault
+## .NET 8 Keyed Services
 
-`[FromKeyedServices("testKey")]` resolves to:
-* DecoratorA
-    * wrapping a SampleService
-
-```
-[Service(Key="randomKey")]
+```csharp
+[Service(Key = "randomKey")]
 class SampleServiceDefault : IService {}
 
-[Service(Key="testKey")]
+[Service(Key = "testKey")]
 class SampleService : IService {}
 
-[Decorator(Key="testKey")]
+[Decorator(Key = "testKey")]
 class DecoratorA : IService {}
 
-public class Test([FromKeyedServices("randomKey")] IService randomSvc, [FromKeyedServices("testKey")] IService svc);
+public class Test
+{
+    public Test(
+        [FromKeyedServices("randomKey")] IService randomSvc,
+        [FromKeyedServices("testKey")] IService svc)
+    {
+        // `randomSvc` resolves to `SampleServiceDefault`
+        // `svc` resolves to `DecoratorA` wrapping `SampleService`
+    }
+}
 ```
+
+## Feature Flags
+> **Note:** Starting from version 2.0.0, you can conditionally register services and decorators based on feature flags.
+
+```csharp
+
+[Flags]
+public enum Features
+{
+    None = 0,
+    FeatureA = 1 << 0,
+    FeatureB = 1 << 1,
+    FeatureC = 1 << 2
+}
+
+[Service<Features>(Feature = Features.FeatureA)]
+class FeatureAService : IService {}
+
+[Service<Features>(Feature = Features.FeatureB)]
+class FeatureBService : IService {}
+
+[Decorator<Features>(Feature = Features.FeatureA)]
+class FeatureADecorator : IService {}
+
+[Decorator<Features>(Feature = Features.FeatureB)]
+class FeatureBDecorator : IService {}
+
+```
+
+```csharp
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceAttributeBasedDependencyInjection<Features>(options =>
+{
+    options.ActiveFeatures = Features.FeatureA | Features.FeatureB;
+});
+
+```
+### or appsettings.json based:
+```json
+{
+  "DIFeatureFlags": ["FeatureA", "FeatureB"]
+}
+```
+### and then you can ignore options and use as:
+```csharp
+
+builder.AddServiceAttributeBasedDependencyInjection<Features>();
+
+```
+
+## Migration to Version 2.0.0
+
+Starting from version 2.0.0, only .NET 8 or higher is supported. If you're upgrading from an earlier version, ensure your project targets .NET 8 or higher.

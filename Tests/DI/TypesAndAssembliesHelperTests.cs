@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace IL.AttributeBasedDI.Tests.DI;
-#if NET8_0_OR_GREATER
 
 [Service(Key = "test")]
 [Service(Key = "secondaryKeyForTest")]
@@ -200,4 +199,3 @@ public class DiTests
         Assert.Contains(nameof(TestWidelyUsedService2), originalServices);
     }
 }
-#endif

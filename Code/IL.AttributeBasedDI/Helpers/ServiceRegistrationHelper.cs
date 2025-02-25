@@ -9,19 +9,21 @@ namespace IL.AttributeBasedDI.Helpers;
 
 internal static class ServiceRegistrationHelper
 {
-    public static void RegisterClassesWithServiceAttributeAndDecorators(this IServiceCollection serviceCollection, IConfiguration? configuration = null,
-        params string[] assemblyFilters)
+    public static void RegisterClassesWithServiceAttributeAndDecorators<TFeatureFlag>(this IServiceCollection serviceCollection,
+        TFeatureFlag activeFeatures,
+        IConfiguration? configuration = null,
+        params string[] assemblyFilters) where TFeatureFlag : struct, Enum
     {
         var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
         var allTypes = GetAllTypesFromAssemblies(assemblies);
-        serviceCollection.RegisterClassesWithServiceAttributes(allTypes);
-#if NET7_0_OR_GREATER
-        serviceCollection.RegisterClassesWithServiceAttributesWithOptions(configuration, allTypes);
-#endif
-        serviceCollection.RegisterClassesWithDecoratorAttributes(allTypes);
+        serviceCollection.RegisterClassesWithServiceAttributes(activeFeatures, allTypes);
+        serviceCollection.RegisterClassesWithServiceAttributesWithOptions(activeFeatures, configuration, allTypes);
+        serviceCollection.RegisterClassesWithDecoratorAttributes(activeFeatures, allTypes);
     }
 
-    public static Type? GetServiceTypeBasedOnDependencyInjectionAttribute<T>(Type sourceType, T dependencyInjectionAttributeBase) where T : DependencyInjectionAttributeBase
+    public static Type? GetServiceTypeBasedOnDependencyInjectionAttribute<TFeatureFlag>(Type sourceType,
+        DependencyInjectionAttributeBase<TFeatureFlag> dependencyInjectionAttributeBase)
+        where TFeatureFlag : struct, Enum
     {
         return dependencyInjectionAttributeBase.FindServiceTypeAutomatically
             ? ExtractServiceTypeFromInterfaces(sourceType)

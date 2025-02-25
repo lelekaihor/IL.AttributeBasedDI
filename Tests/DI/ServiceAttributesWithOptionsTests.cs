@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace IL.AttributeBasedDI.Tests.DI;
-#if NET7_0_OR_GREATER
+
 using Attributes;
 using Extensions;
 using Options;
@@ -84,4 +84,3 @@ public class ServiceAttributesWithOptionsTests
         Assert.Equal("test123", service2.GetOption1Value());
     }
 }
-#endif

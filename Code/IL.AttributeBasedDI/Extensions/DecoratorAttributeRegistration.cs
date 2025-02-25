@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using IL.AttributeBasedDI.Attributes;
 using IL.AttributeBasedDI.Exceptions;
 using IL.AttributeBasedDI.Helpers;
+using IL.AttributeBasedDI.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -10,23 +11,26 @@ namespace IL.AttributeBasedDI.Extensions;
 
 internal static class DecoratorAttributeRegistration
 {
-    public static void RegisterClassesWithDecoratorAttributes(this IServiceCollection serviceCollection, params Type[] types)
+    public static void RegisterClassesWithDecoratorAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
+        TFeatureFlag activeFeatures,
+        params Type[] types)
+        where TFeatureFlag : struct, Enum
     {
         var serviceDecorations = types
-            .Where(type => type.GetCustomAttribute<DecoratorAttribute>() != null)
+            .Where(type => type.GetCustomAttribute<DecoratorAttribute<TFeatureFlag>>() != null)
             .Select(type =>
             {
-                var decoratorAttribute = type.GetCustomAttribute<DecoratorAttribute>()!;
+                var decoratorAttribute = type.GetCustomAttribute<DecoratorAttribute<TFeatureFlag>>();
                 return new
                 {
-#if NET8_0_OR_GREATER
-                    decoratorAttribute.Key,
-#endif
+                    decoratorAttribute!.Key,
                     decoratorAttribute.DecorationOrder,
+                    decoratorAttribute.Feature,
                     ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute),
                     DecoratorImplementationType = type
                 };
             })
+            .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
             .OrderBy(x => x.DecorationOrder)
             .ToList();
 
@@ -39,31 +43,23 @@ internal static class DecoratorAttributeRegistration
 
             serviceCollection.AddDecoratorForService(serviceDecorationEntry.ServiceType,
                 serviceDecorationEntry.DecoratorImplementationType,
-#if NET8_0_OR_GREATER
                 serviceDecorationEntry.Key);
-#else
-                string.Empty);
-#endif
         }
     }
 
     //Credits to https://greatrexpectations.com/2018/10/25/decorators-in-net-core-with-dependency-injection
-    public static void AddDecoratorForService(this IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType, string? key)
+    private static void AddDecoratorForService(this IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType, string? key)
     {
-        var objectFactory = ActivatorUtilities.CreateFactory(
-            decoratorImplementationType,
-            new[] { serviceType });
-
+        var objectFactory = ActivatorUtilities.CreateFactory(decoratorImplementationType, [serviceType]);
         var descriptorsToDecorate = serviceCollection
             .Where(s =>
             {
                 var valid = s.ServiceType == serviceType;
-#if NET8_0_OR_GREATER
                 if (!string.IsNullOrEmpty(key))
                 {
                     valid = s.ServiceKey?.ToString() == key;
                 }
-#endif
+
                 return valid;
             })
             .ToList();
@@ -75,7 +71,6 @@ internal static class DecoratorAttributeRegistration
 
         foreach (var descriptor in CollectionsMarshal.AsSpan(descriptorsToDecorate))
         {
-#if NET8_0_OR_GREATER
             serviceCollection.Replace(!string.IsNullOrEmpty(key)
                 ? ServiceDescriptor.DescribeKeyed(
                     serviceType,
@@ -88,20 +83,11 @@ internal static class DecoratorAttributeRegistration
                     implementationFactory => objectFactory(implementationFactory, [implementationFactory.CreateInstance(descriptor)]),
                     descriptor.Lifetime)
             );
-#else
-            serviceCollection.Replace(ServiceDescriptor.Describe(
-                serviceType,
-                implementationFactory => objectFactory(implementationFactory, new[] { implementationFactory.CreateInstance(descriptor) }),
-                descriptor.Lifetime)
-            );
-#endif
         }
     }
 
-    public static object CreateInstance(this IServiceProvider serviceProvider, ServiceDescriptor serviceDescriptor)
-    {
-#if NET8_0_OR_GREATER
-        return serviceDescriptor switch
+    private static object CreateInstance(this IServiceProvider serviceProvider, ServiceDescriptor serviceDescriptor) =>
+        serviceDescriptor switch
         {
             { IsKeyedService: true, KeyedImplementationInstance: not null } => serviceDescriptor.KeyedImplementationInstance,
             { IsKeyedService: true, KeyedImplementationFactory: not null } => serviceDescriptor.KeyedImplementationFactory(serviceProvider, serviceDescriptor.ServiceKey),
@@ -111,19 +97,4 @@ internal static class DecoratorAttributeRegistration
             { IsKeyedService: false, ImplementationFactory: not null } => serviceDescriptor.ImplementationFactory(serviceProvider),
             _ => ActivatorUtilities.GetServiceOrCreateInstance(serviceProvider, serviceDescriptor.ImplementationType!)
         };
-
-#else
-        if (serviceDescriptor.ImplementationInstance != null)
-        {
-            return serviceDescriptor.ImplementationInstance;
-        }
-
-        if (serviceDescriptor.ImplementationFactory != null)
-        {
-            return serviceDescriptor.ImplementationFactory(serviceProvider);
-        }
-
-        return ActivatorUtilities.GetServiceOrCreateInstance(serviceProvider, serviceDescriptor.ImplementationType!);
-#endif
-    }
 }

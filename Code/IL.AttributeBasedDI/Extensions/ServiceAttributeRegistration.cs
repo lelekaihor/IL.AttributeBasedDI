@@ -9,15 +9,17 @@ namespace IL.AttributeBasedDI.Extensions;
 
 internal static class ServiceAttributeRegistration
 {
-    public static void RegisterClassesWithServiceAttributes(this IServiceCollection serviceCollection, params Type[] types)
+    public static void RegisterClassesWithServiceAttributes<TFeatureFlag>(this IServiceCollection serviceCollection, TFeatureFlag activeFeatures, params Type[] types)
+        where TFeatureFlag : struct, Enum
     {
         var serviceRegistrations = types
-            .Where(type => type.GetCustomAttributes<ServiceAttribute>().Any())
+            .Where(type => type.GetCustomAttributes(typeof(ServiceAttribute<TFeatureFlag>)).Any())
             .SelectMany(type =>
                 type
-                    .GetCustomAttributes<ServiceAttribute>()
+                    .GetCustomAttributes<ServiceAttribute<TFeatureFlag>>()
                     .Select(attribute => ToRegistrationEntry(attribute, type))
             )
+            .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
             .ToList();
 
         foreach (var serviceRegistrationEntry in CollectionsMarshal.AsSpan(serviceRegistrations))
@@ -25,117 +27,78 @@ internal static class ServiceAttributeRegistration
             if (serviceRegistrationEntry.ServiceType == null)
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ImplementationType,
+                    null,
                     serviceRegistrationEntry.ServiceLifetime,
-#if NET8_0_OR_GREATER
                     serviceRegistrationEntry.Key);
-#else
-                    string.Empty);
-#endif
             }
             else
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ServiceType,
                     serviceRegistrationEntry.ImplementationType,
                     serviceRegistrationEntry.ServiceLifetime,
-#if NET8_0_OR_GREATER
                     serviceRegistrationEntry.Key);
-#else
-                    string.Empty);
-#endif
             }
         }
     }
 
-    public static RegistrationEntry ToRegistrationEntry(this ServiceAttribute attribute, Type type)
+    public static RegistrationEntry<TFeatureFlag> ToRegistrationEntry<TFeatureFlag>(this ServiceAttribute<TFeatureFlag> attribute, Type type)
+        where TFeatureFlag : struct, Enum
     {
-        return new RegistrationEntry
+        return new RegistrationEntry<TFeatureFlag>
         {
-#if NET8_0_OR_GREATER
             Key = attribute.Key,
-#endif
             ServiceLifetime = attribute.Lifetime,
             ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, attribute),
-            ImplementationType = type
+            ImplementationType = type,
+            Feature = attribute.Feature
         };
     }
 
-    public static void AddServiceWithLifetime(this IServiceCollection serviceCollection, Type type, Lifetime lifetime, string? key)
+    public static void AddServiceWithLifetime(
+        this IServiceCollection serviceCollection,
+        Type serviceType,
+        Type? implementationType,
+        Lifetime lifetime,
+        string? key)
     {
+        implementationType ??= serviceType;
+
         switch (lifetime)
         {
             case Lifetime.Singleton:
-#if NET8_0_OR_GREATER
-                if (!string.IsNullOrEmpty(key))
-                {
-                    serviceCollection.AddKeyedSingleton(serviceType: type, key);
-                    break;
-                }
-#endif
-                serviceCollection.AddSingleton(type);
-                break;
-
-            case Lifetime.Transient:
-#if NET8_0_OR_GREATER
-                if (!string.IsNullOrEmpty(key))
-                {
-                    serviceCollection.AddKeyedTransient(type, key);
-                    break;
-                }
-#endif
-                serviceCollection.AddTransient(type);
-                break;
-
-            case Lifetime.Scoped:
-#if NET8_0_OR_GREATER
-                if (!string.IsNullOrEmpty(key))
-                {
-                    serviceCollection.AddKeyedScoped(type, key);
-                    break;
-                }
-#endif
-                serviceCollection.AddScoped(type);
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(lifetime), lifetime, null);
-        }
-    }
-
-    public static void AddServiceWithLifetime(this IServiceCollection serviceCollection, Type serviceType, Type implementationType, Lifetime lifetime, string? key)
-    {
-        switch (lifetime)
-        {
-            case Lifetime.Singleton:
-#if NET8_0_OR_GREATER
                 if (!string.IsNullOrEmpty(key))
                 {
                     serviceCollection.AddKeyedSingleton(serviceType, key, implementationType);
-                    break;
                 }
-#endif
-                serviceCollection.AddSingleton(serviceType, implementationType);
+                else
+                {
+                    serviceCollection.AddSingleton(serviceType, implementationType);
+                }
+
                 break;
 
             case Lifetime.Transient:
-#if NET8_0_OR_GREATER
                 if (!string.IsNullOrEmpty(key))
                 {
                     serviceCollection.AddKeyedTransient(serviceType, key, implementationType);
-                    break;
                 }
-#endif
-                serviceCollection.AddTransient(serviceType, implementationType);
+                else
+                {
+                    serviceCollection.AddTransient(serviceType, implementationType);
+                }
+
                 break;
 
             case Lifetime.Scoped:
-#if NET8_0_OR_GREATER
                 if (!string.IsNullOrEmpty(key))
                 {
                     serviceCollection.AddKeyedScoped(serviceType, key, implementationType);
-                    break;
                 }
-#endif
-                serviceCollection.AddScoped(serviceType, implementationType);
+                else
+                {
+                    serviceCollection.AddScoped(serviceType, implementationType);
+                }
+
                 break;
 
             default:
