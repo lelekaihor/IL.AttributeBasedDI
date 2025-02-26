@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using IL.AttributeBasedDI.Attributes;
 using IL.AttributeBasedDI.Exceptions;
 using IL.AttributeBasedDI.Helpers;
-using IL.AttributeBasedDI.Models;
+using IL.Misc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -11,6 +11,8 @@ namespace IL.AttributeBasedDI.Extensions;
 
 internal static class DecoratorAttributeRegistration
 {
+    private const string WildcardKey = "*";
+
     public static void RegisterClassesWithDecoratorAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
         TFeatureFlag activeFeatures,
         params Type[] types)
@@ -55,12 +57,14 @@ internal static class DecoratorAttributeRegistration
             .Where(s =>
             {
                 var valid = s.ServiceType == serviceType;
-                if (!string.IsNullOrEmpty(key))
+                if (string.IsNullOrEmpty(key))
                 {
-                    valid = s.ServiceKey?.ToString() == key;
+                    return valid;
                 }
 
-                return valid;
+                var descriptorServiceKey = s.ServiceKey?.ToString();
+                return descriptorServiceKey == key
+                       || !string.IsNullOrEmpty(descriptorServiceKey) && IsWildcardKey(key) && descriptorServiceKey.MatchesWildcard(key);
             })
             .ToList();
 
@@ -74,7 +78,7 @@ internal static class DecoratorAttributeRegistration
             serviceCollection.Replace(!string.IsNullOrEmpty(key)
                 ? ServiceDescriptor.DescribeKeyed(
                     serviceType,
-                    key,
+                    IsWildcardKey(key) ? descriptor.ServiceKey!.ToString() : key,
                     (serviceProvider, _) => objectFactory(serviceProvider, [serviceProvider.CreateInstance(descriptor)]),
                     descriptor.Lifetime
                 )
@@ -84,6 +88,11 @@ internal static class DecoratorAttributeRegistration
                     descriptor.Lifetime)
             );
         }
+    }
+
+    private static bool IsWildcardKey(string key)
+    {
+        return key.Contains(WildcardKey);
     }
 
     private static object CreateInstance(this IServiceProvider serviceProvider, ServiceDescriptor serviceDescriptor) =>
