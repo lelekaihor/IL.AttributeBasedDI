@@ -19,9 +19,6 @@ public sealed class ServiceWithOptionsAttribute<T> : ServiceWithOptionsAttribute
     /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
     public ServiceWithOptionsAttribute(Type? serviceType = null, Lifetime lifetime = Lifetime.Transient, string? key = null) : base(serviceType, lifetime, key)
     {
-        ServiceType = serviceType;
-        Lifetime = lifetime;
-        Key = key;
     }
 }
 

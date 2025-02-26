@@ -13,9 +13,6 @@ public class ServiceAttribute : ServiceAttribute<FeaturesNoop>
     /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
     public ServiceAttribute(Type? serviceType = null, Lifetime lifetime = Lifetime.Transient, string? key = null) : base(serviceType, lifetime, key)
     {
-        ServiceType = serviceType;
-        Lifetime = lifetime;
-        Key = key;
     }
 }
 

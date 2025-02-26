@@ -4,6 +4,18 @@ namespace IL.AttributeBasedDI.Attributes;
 
 public sealed class DecoratorAttribute : DecoratorAttribute<FeaturesNoop>
 {
+    /// <summary>
+    /// Decorator Attribute constructor
+    /// </summary>
+    /// <param name="serviceType">Specifies which service is target for decoration.
+    ///     If left null/default service will be automatically resolved to first interface current class implements.</param>
+    /// <param name="decorationOrder">Defines order of decoration. Lower decoration order will be closer to original implementation in chain of execution order.
+    ///     And, respectively, decorator with highest DecorationOrder will be executed last.</param>
+    /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
+    /// <param name="feature">Feature flag</param>
+    public DecoratorAttribute(Type? serviceType = null, int decorationOrder = 1, string? key = null) : base(serviceType, decorationOrder, key)
+    {
+    }
 }
 
 /// <summary>
