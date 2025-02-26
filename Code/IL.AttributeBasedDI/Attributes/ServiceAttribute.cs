@@ -4,6 +4,19 @@ namespace IL.AttributeBasedDI.Attributes;
 
 public class ServiceAttribute : ServiceAttribute<FeaturesNoop>
 {
+    /// <summary>
+    /// Service Attribute constructor
+    /// </summary>
+    /// <param name="serviceType">Specifies which service is target for DI registration.
+    /// If left null/default service will be automatically retrieved either from first interface current class implements or the class itself will become a serviceType.</param>
+    /// <param name="lifetime">Specifies service lifetime.</param>
+    /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
+    public ServiceAttribute(Type? serviceType = null, Lifetime lifetime = Lifetime.Transient, string? key = null) : base(serviceType, lifetime, key)
+    {
+        ServiceType = serviceType;
+        Lifetime = lifetime;
+        Key = key;
+    }
 }
 
 /// <summary>
