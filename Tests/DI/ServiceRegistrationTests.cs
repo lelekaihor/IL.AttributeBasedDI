@@ -46,7 +46,7 @@ public class ServiceRegistration
 
         Assert.NotNull(sp.GetService<Test123>());
     }
-    
+
     [Fact]
     public void DecoratorOfTestServices_ShouldDecorate_OriginalService1()
     {
@@ -70,7 +70,7 @@ public class ServiceRegistration
 
         var decorator1 = (DecoratorOfTestServices)decoratedService1;
         Assert.Equal(typeof(OriginalService1), decorator1.DecoratedService());
-        
+
         var decorator2 = (DecoratorOfTestServices)decoratedService2;
         Assert.Equal(typeof(OriginalService2), decorator2.DecoratedService());
     }

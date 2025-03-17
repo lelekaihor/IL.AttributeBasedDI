@@ -40,7 +40,7 @@ internal static class ServiceRegistrationHelper
         return assemblies
             .Where(assembly => !assembly.IsDynamic)
             .SelectMany(TypesAndAssembliesHelper.GetExportedTypes)
-            .Where(type => type is { IsAbstract: false, IsGenericTypeDefinition: false })
+            .Where(type => type is { IsAbstract: false })
             .ToArray();
     }
 }

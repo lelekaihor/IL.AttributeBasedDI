@@ -29,7 +29,8 @@ internal static class DecoratorAttributeRegistration
                     decoratorAttribute.DecorationOrder,
                     decoratorAttribute.Feature,
                     ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute),
-                    DecoratorImplementationType = type
+                    DecoratorImplementationType = type,
+                    decoratorAttribute.TreatOpenGenericsAsWildcard
                 };
             })
             .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
@@ -45,14 +46,76 @@ internal static class DecoratorAttributeRegistration
 
             serviceCollection.AddDecoratorForService(serviceDecorationEntry.ServiceType,
                 serviceDecorationEntry.DecoratorImplementationType,
-                serviceDecorationEntry.Key);
+                serviceDecorationEntry.Key,
+                serviceDecorationEntry.TreatOpenGenericsAsWildcard);
         }
     }
 
     //Credits to https://greatrexpectations.com/2018/10/25/decorators-in-net-core-with-dependency-injection
-    private static void AddDecoratorForService(this IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType, string? key)
+    private static void AddDecoratorForService(this IServiceCollection serviceCollection,
+        Type serviceType,
+        Type decoratorImplementationType,
+        string? key,
+        bool treatOpenGenericsAsWildcard)
     {
-        var objectFactory = ActivatorUtilities.CreateFactory(decoratorImplementationType, [serviceType]);
+        if (!serviceType.IsGenericType)
+        {
+            HandleNonGenericDecorators(serviceCollection, serviceType, decoratorImplementationType, key);
+        }
+        else if (treatOpenGenericsAsWildcard
+                 && serviceType.IsGenericType
+                 && decoratorImplementationType.ContainsGenericParameters)
+        {
+            HandleGenericDecoratorsWithTreatOpenGenericsAsWildcard(serviceCollection, serviceType, decoratorImplementationType, key);
+        }
+        else
+        {
+            // standard open generics are not supported for now
+        }
+    }
+
+    private static void HandleGenericDecoratorsWithTreatOpenGenericsAsWildcard(IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType,
+        string? key)
+    {
+        var descriptorsToDecorate = serviceCollection
+            .Where(s =>
+            {
+                var valid = s.ServiceType.FullName?.StartsWith(serviceType.FullName ?? string.Empty) is true;
+                if (valid && !string.IsNullOrEmpty(key))
+                {
+                    throw new ServiceDecorationException("Wildcard open generics decoration for keyed services is not supported!");
+                }
+
+                return valid;
+            })
+            .ToList();
+        if (descriptorsToDecorate.Count == 0)
+        {
+            throw new ServiceDecorationException($"No services registered for type {serviceType.FullName} in ServiceCollection, Decoration is impossible.");
+        }
+
+        foreach (var descriptor in CollectionsMarshal.AsSpan(descriptorsToDecorate))
+        {
+            var genericArguments = descriptor.ServiceType.GetGenericArguments();
+            if (genericArguments.Any(x => x.ContainsGenericParameters))
+            {
+                // standard open generics are not supported for treatOpenGenericsAsWildcard = true
+                continue;
+            }
+
+            var closedDecoratorType = decoratorImplementationType.MakeGenericType(genericArguments);
+            var objectFactory = ActivatorUtilities.CreateFactory(closedDecoratorType, [descriptor.ServiceType]);
+            serviceCollection.Replace(
+                ServiceDescriptor.Describe(
+                    descriptor.ServiceType,
+                    implementationFactory => objectFactory(implementationFactory, [implementationFactory.CreateInstance(descriptor)]),
+                    descriptor.Lifetime)
+            );
+        }
+    }
+
+    private static void HandleNonGenericDecorators(IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType, string? key)
+    {
         var descriptorsToDecorate = serviceCollection
             .Where(s =>
             {
@@ -70,9 +133,10 @@ internal static class DecoratorAttributeRegistration
 
         if (descriptorsToDecorate.Count == 0)
         {
-            throw new ServiceDecorationException($"No services registered for type {serviceType} in ServiceCollection, Decoration is impossible.");
+            throw new ServiceDecorationException($"No services registered for type {serviceType.FullName} in ServiceCollection, Decoration is impossible.");
         }
 
+        var objectFactory = ActivatorUtilities.CreateFactory(decoratorImplementationType, [serviceType]);
         foreach (var descriptor in CollectionsMarshal.AsSpan(descriptorsToDecorate))
         {
             serviceCollection.Replace(!string.IsNullOrEmpty(key)
