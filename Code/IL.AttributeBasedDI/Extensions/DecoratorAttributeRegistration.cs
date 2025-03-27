@@ -58,7 +58,7 @@ internal static class DecoratorAttributeRegistration
         string? key,
         bool treatOpenGenericsAsWildcard)
     {
-        if (!serviceType.IsGenericType)
+        if (!serviceType.IsGenericType || !decoratorImplementationType.IsGenericType)
         {
             HandleNonGenericDecorators(serviceCollection, serviceType, decoratorImplementationType, key);
         }
