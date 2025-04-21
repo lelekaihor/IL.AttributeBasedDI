@@ -9,8 +9,15 @@ public static class ServiceCollectionExtensions
 {
     public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
         IConfiguration configuration,
+        params string[] assemblyFilters)
+    {
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration, null, assemblyFilters);
+    }
+
+    public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
+        IConfiguration configuration,
         Action<FeatureBasedDIOptions>? configureOptions = null,
-        string[]? assemblyFilters = null)
+        params string[] assemblyFilters)
     {
         PreventEmptyAssemblyFilters(ref assemblyFilters);
 
@@ -40,9 +47,9 @@ public static class ServiceCollectionExtensions
         }
     }
 
-    private static void PreventEmptyAssemblyFilters(ref string[]? assemblyFilters)
+    private static void PreventEmptyAssemblyFilters(ref string[] assemblyFilters)
     {
-        if (assemblyFilters == null || assemblyFilters.Length == 0)
+        if (assemblyFilters.Length == 0)
         {
             assemblyFilters = ["*"];
         }

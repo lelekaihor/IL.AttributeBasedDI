@@ -15,7 +15,7 @@ public static class WebAppBuilderExtensions
         this WebApplicationBuilder builder,
         params string[] assemblyFilters)
     {
-        builder.Services.AddServiceAttributeBasedDependencyInjection(builder.Configuration, assemblyFilters: assemblyFilters);
+        builder.Services.AddServiceAttributeBasedDependencyInjection(builder.Configuration, assemblyFilters);
         return builder;
     }
 
