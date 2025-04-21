@@ -4,7 +4,7 @@
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>2.2.2</PackageVersion>
+    <PackageVersion>2.3.0</PackageVersion>
     <Title>Attribute Based Dependency Injection</Title>
     <Authors>Ihor Leleka</Authors>
     <Description>Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection</Description>

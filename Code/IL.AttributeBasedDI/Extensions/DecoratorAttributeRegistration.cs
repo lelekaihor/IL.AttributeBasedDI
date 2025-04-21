@@ -15,6 +15,7 @@ internal static class DecoratorAttributeRegistration
 
     public static void RegisterClassesWithDecoratorAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
         TFeatureFlag activeFeatures,
+        bool throwWhenDecorationTypeNotFound,
         params Type[] types)
         where TFeatureFlag : struct, Enum
     {
@@ -41,6 +42,11 @@ internal static class DecoratorAttributeRegistration
         {
             if (serviceDecorationEntry.ServiceType == null)
             {
+                if (!throwWhenDecorationTypeNotFound)
+                {
+                    continue;
+                }
+
                 throw new ServiceDecorationException($"Can't determine service to decorate. Decorator type: {serviceDecorationEntry.DecoratorImplementationType.FullName}");
             }
 

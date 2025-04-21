@@ -72,7 +72,7 @@ public class ServiceAttributesWithOptionsTests
         var builder = new ConfigurationBuilder();
         builder.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appSettings)));
         var configuration = builder.Build();
-        serviceCollection.AddServiceAttributeBasedDependencyInjectionWithOptions(configuration);
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert

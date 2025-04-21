@@ -1,5 +1,6 @@
 ﻿using IL.AttributeBasedDI.Attributes;
 using IL.AttributeBasedDI.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -104,9 +105,11 @@ public class DiTests
     {
         // Arrange
         var serviceCollection = new ServiceCollection();
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
 
         // Act
-        serviceCollection.AddServiceAttributeBasedDependencyInjection();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert
@@ -119,9 +122,11 @@ public class DiTests
     {
         // Arrange
         var serviceCollection = new ServiceCollection();
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
 
         // Act
-        serviceCollection.AddServiceAttributeBasedDependencyInjection();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert
@@ -134,9 +139,11 @@ public class DiTests
     {
         // Arrange
         var serviceCollection = new ServiceCollection();
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
 
         // Act
-        serviceCollection.AddServiceAttributeBasedDependencyInjection();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
         var resolvedService = sp.GetRequiredKeyedService<ITestInterface1>("test2");
         var selfIdentificationResult = resolvedService.IdentifySelf();
@@ -152,9 +159,11 @@ public class DiTests
     {
         // Arrange
         var serviceCollection = new ServiceCollection();
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
 
         // Act
-        serviceCollection.AddServiceAttributeBasedDependencyInjection();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert
@@ -167,9 +176,11 @@ public class DiTests
     {
         // Arrange
         var serviceCollection = new ServiceCollection();
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
 
         // Act
-        serviceCollection.AddServiceAttributeBasedDependencyInjection();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert
@@ -183,9 +194,11 @@ public class DiTests
     {
         // Arrange
         var serviceCollection = new ServiceCollection();
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
 
         // Act
-        serviceCollection.AddServiceAttributeBasedDependencyInjection();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
         var widelyUsedTestServices = sp.GetServices<IWidelyUsedInterface>().ToList();
         var originalServices = widelyUsedTestServices

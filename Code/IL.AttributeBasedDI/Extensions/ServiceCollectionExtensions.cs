@@ -1,5 +1,4 @@
 ﻿using IL.AttributeBasedDI.Helpers;
-using IL.AttributeBasedDI.Models;
 using IL.AttributeBasedDI.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,78 +7,42 @@ namespace IL.AttributeBasedDI.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    // Non-generic version (no feature flags)
     public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
-        params string[] assemblyFilters)
-    {
-        PreventEmptyAssemblyFilters(ref assemblyFilters);
-        serviceCollection.AddServiceAttributeBasedDependencyInjection<FeaturesNoop>(_ => { });
-    }
-
-    // Non-generic version with configuration (no feature flags)
-    public static void AddServiceAttributeBasedDependencyInjectionWithOptions(this IServiceCollection serviceCollection,
         IConfiguration configuration,
-        params string[] assemblyFilters)
+        Action<FeatureBasedDIOptions>? configureOptions = null,
+        string[]? assemblyFilters = null)
     {
         PreventEmptyAssemblyFilters(ref assemblyFilters);
-        serviceCollection.AddServiceAttributeBasedDependencyInjectionWithOptions<FeaturesNoop>(configuration, _ => { });
-    }
 
-    // Generic version with active features
-    public static void AddServiceAttributeBasedDependencyInjection<TFeatureFlag>(
-        this IServiceCollection serviceCollection,
-        Action<FeatureBasedDIOptions<TFeatureFlag>>? configureOptions,
-        params string[] assemblyFilters)
-        where TFeatureFlag : struct, Enum
-    {
-        var options = new FeatureBasedDIOptions<TFeatureFlag>();
+        var options = new FeatureBasedDIOptions(configuration);
         configureOptions?.Invoke(options);
 
-        PreventEmptyAssemblyFilters(ref assemblyFilters);
-        foreach (var solutionItemWildcard in assemblyFilters.AsSpan())
+        var methodInfo = typeof(ServiceRegistrationHelper).GetMethod(nameof(ServiceRegistrationHelper.RegisterClassesWithServiceAttributeAndDecorators));
+
+        foreach (var filter in assemblyFilters!)
         {
-            serviceCollection.RegisterClassesWithServiceAttributeAndDecorators(options.ActiveFeatures, null, solutionItemWildcard);
-            if (options.ActiveFeatures is not FeaturesNoop)
+            foreach (var featureEnum in options.ActiveFeatures.AllFeatures)
             {
-                serviceCollection.RegisterClassesWithServiceAttributeAndDecorators(FeaturesNoop.None, null, solutionItemWildcard);
+                var enumType = featureEnum.GetType();
+
+                var genericMethod = methodInfo!.MakeGenericMethod(enumType);
+
+                genericMethod.Invoke(null,
+                    [
+                        serviceCollection,
+                        featureEnum,
+                        configuration,
+                        options.ThrowWhenDecorationTypeNotFound,
+                        new[] { filter }
+                    ]
+                );
             }
         }
     }
 
-    // Generic version with configuration and active features
-    public static void AddServiceAttributeBasedDependencyInjectionWithOptions<TFeatureFlag>(
-        this IServiceCollection serviceCollection,
-        IConfiguration configuration,
-        Action<FeatureBasedDIOptions<TFeatureFlag>>? configureOptions = null,
-        params string[] assemblyFilters)
-        where TFeatureFlag : struct, Enum
+    private static void PreventEmptyAssemblyFilters(ref string[]? assemblyFilters)
     {
-        var options = new FeatureBasedDIOptions<TFeatureFlag>();
-
-        // Configure options from appsettings.json
-        var featureNames = configuration.GetSection("DIFeatureFlags").Get<string[]>();
-        if (featureNames != null)
-        {
-            options.SetActiveFeaturesFromNames(featureNames);
-        }
-
-        // Configure options programmatically
-        configureOptions?.Invoke(options);
-
-        PreventEmptyAssemblyFilters(ref assemblyFilters);
-        foreach (var solutionItemWildcard in assemblyFilters.AsSpan())
-        {
-            serviceCollection.RegisterClassesWithServiceAttributeAndDecorators(options.ActiveFeatures, configuration, solutionItemWildcard);
-            if (options.ActiveFeatures is not FeaturesNoop)
-            {
-                serviceCollection.RegisterClassesWithServiceAttributeAndDecorators(FeaturesNoop.None, configuration, solutionItemWildcard);
-            }
-        }
-    }
-
-    private static void PreventEmptyAssemblyFilters(ref string[] assemblyFilters)
-    {
-        if (assemblyFilters.Length == 0)
+        if (assemblyFilters == null || assemblyFilters.Length == 0)
         {
             assemblyFilters = ["*"];
         }

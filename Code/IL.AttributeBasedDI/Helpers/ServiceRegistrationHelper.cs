@@ -11,14 +11,15 @@ internal static class ServiceRegistrationHelper
 {
     public static void RegisterClassesWithServiceAttributeAndDecorators<TFeatureFlag>(this IServiceCollection serviceCollection,
         TFeatureFlag activeFeatures,
-        IConfiguration? configuration = null,
+        IConfiguration configuration,
+        bool throwWhenDecorationTypeNotFound,
         params string[] assemblyFilters) where TFeatureFlag : struct, Enum
     {
         var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
         var allTypes = GetAllTypesFromAssemblies(assemblies);
         serviceCollection.RegisterClassesWithServiceAttributes(activeFeatures, allTypes);
         serviceCollection.RegisterClassesWithServiceAttributesWithOptions(activeFeatures, configuration, allTypes);
-        serviceCollection.RegisterClassesWithDecoratorAttributes(activeFeatures, allTypes);
+        serviceCollection.RegisterClassesWithDecoratorAttributes(activeFeatures, throwWhenDecorationTypeNotFound, allTypes);
     }
 
     public static Type? GetServiceTypeBasedOnDependencyInjectionAttribute<TFeatureFlag>(Type sourceType,

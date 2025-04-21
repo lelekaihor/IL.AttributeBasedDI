@@ -141,22 +141,60 @@ class FeatureBDecorator : IService {}
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddServiceAttributeBasedDependencyInjection<Features>(options =>
-{
-    options.ActiveFeatures = Features.FeatureA | Features.FeatureB;
-});
+// single feature type
+builder.AddServiceAttributeBasedDependencyInjection(configuration,
+    options => options.AddFeature(Features.FeatureA | Features.FeatureC)
+);
+
+//or multiple feature types
+builder.AddServiceAttributeBasedDependencyInjection(configuration,
+    options => {
+        options.AddFeature(Features.FeatureA | Features.FeatureC);
+        options.AddFeature(AnotherFeaturesEnum.FeatureA | AnotherFeaturesEnum.FeatureC);
+    }
+);
+
+// AddFeature will merge features of same type if called multiple times resulting same as bit operator invariant (FeatureA | FeatureC)
+builder.AddServiceAttributeBasedDependencyInjection(configuration,
+    options => {
+        options.AddFeature(Features.FeatureA);
+        options.AddFeature(Features.FeatureC);
+        options.AddFeature(AnotherFeaturesEnum.FeatureA);
+        options.AddFeature(AnotherFeaturesEnum.FeatureC);
+    }
+);
 
 ```
 ### or appsettings.json based:
 ```json
 {
-  "DIFeatureFlags": ["FeatureA", "FeatureB"]
+    "DIFeatureFlags": {
+        "Features": ["FeatureA", "FeatureC"]
+    }
 }
 ```
-### and then you can ignore options and use as:
+### and then you have to specify key/type mappings in options:
 ```csharp
 
-builder.AddServiceAttributeBasedDependencyInjection<Features>();
+builder.AddServiceAttributeBasedDependencyInjection(configuration,
+            options => options.SetFeaturesFromConfig(
+                new Dictionary<string, Type>
+                {
+                    { nameof(Features), typeof(Features) }
+                }
+            );
+        );
+
+// you can also specify custom root object key in appsettings.json instead of "DIFeatureFlags"
+builder.AddServiceAttributeBasedDependencyInjection(configuration,
+            options => options.SetFeaturesFromConfig(
+                new Dictionary<string, Type>
+                {
+                    { nameof(Features), typeof(Features) }
+                },
+                "CustomRootObjectKeyInsteadOfDIFeatureFlags"
+            );
+        );
 
 ```
 

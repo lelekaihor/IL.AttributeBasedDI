@@ -29,7 +29,7 @@ public class ServiceRegistrationWithConstraintsAndTreatOpenGenericsAsWildcard
 
         var builder = new ConfigurationBuilder();
         var configuration = builder.Build();
-        serviceCollection.AddServiceAttributeBasedDependencyInjectionWithOptions(configuration);
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         // Act

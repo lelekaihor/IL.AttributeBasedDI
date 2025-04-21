@@ -43,14 +43,62 @@ public class FeatureEnabledAttributesTests
         // Act
         var appSettings = """
                           {
-                              "DIFeatureFlags": ["FeatureA", "FeatureC"]
+                              "DIFeatureFlags": {
+                                "Features": ["FeatureA", "FeatureC"]
+                              }
                           }
                           """;
 
         var builder = new ConfigurationBuilder();
         builder.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appSettings)));
         var configuration = builder.Build();
-        serviceCollection.AddServiceAttributeBasedDependencyInjectionWithOptions<Features>(configuration);
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options =>
+            {
+                options.SetFeaturesFromConfig(new Dictionary<string, Type>
+                {
+                    { nameof(Features), typeof(Features) }
+                });
+            }
+        );
+        var sp = serviceCollection.BuildServiceProvider();
+
+        // Assert
+        var service1 = sp.GetRequiredService<Test1>();
+        Assert.NotNull(service1);
+        var service2 = sp.GetService<Test2>();
+        Assert.Null(service2);
+        var service3 = sp.GetService<Test3>();
+        Assert.NotNull(service3);
+    }
+
+    [Fact]
+    public void OnlyServiceWithActivatedFeaturesSuccessfullyRegistered_AppSettings_CustomKey()
+    {
+        // Arrange
+        var serviceCollection = new ServiceCollection();
+        const string customKey = "FeatureFlags";
+
+        // Act
+        var appSettings = $$"""
+                            {
+                                "{{customKey}}": {
+                                  "Features": ["FeatureA", "FeatureC"]
+                                }
+                            }
+                            """;
+
+        var builder = new ConfigurationBuilder();
+        builder.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appSettings)));
+        var configuration = builder.Build();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options =>
+            {
+                options.SetFeaturesFromConfig(new Dictionary<string, Type>
+                {
+                    { nameof(Features), typeof(Features) }
+                }, customKey);
+            });
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert
@@ -71,8 +119,36 @@ public class FeatureEnabledAttributesTests
 
         var builder = new ConfigurationBuilder();
         var configuration = builder.Build();
-        serviceCollection.AddServiceAttributeBasedDependencyInjectionWithOptions<Features>(configuration,
-            options => options.ActiveFeatures = Features.FeatureA | Features.FeatureC);
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options => options.AddFeature(Features.FeatureA | Features.FeatureC)
+        );
+        var sp = serviceCollection.BuildServiceProvider();
+
+        // Assert
+        var service1 = sp.GetRequiredService<Test1>();
+        Assert.NotNull(service1);
+        var service2 = sp.GetService<Test2>();
+        Assert.Null(service2);
+        var service3 = sp.GetService<Test3>();
+        Assert.NotNull(service3);
+    }
+    
+    [Fact]
+    public void OnlyServiceWithActivatedFeaturesSuccessfullyRegistered_OptionsAction_Merge()
+    {
+        // Arrange
+        var serviceCollection = new ServiceCollection();
+
+
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options =>
+            {
+                options.AddFeature(Features.FeatureA);
+                options.AddFeature(Features.FeatureC);
+            }
+        );
         var sp = serviceCollection.BuildServiceProvider();
 
         // Assert
