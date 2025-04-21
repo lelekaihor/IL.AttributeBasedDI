@@ -53,7 +53,8 @@ internal static class DecoratorAttributeRegistration
             serviceCollection.AddDecoratorForService(serviceDecorationEntry.ServiceType,
                 serviceDecorationEntry.DecoratorImplementationType,
                 serviceDecorationEntry.Key,
-                serviceDecorationEntry.TreatOpenGenericsAsWildcard);
+                serviceDecorationEntry.TreatOpenGenericsAsWildcard,
+                throwWhenDecorationTypeNotFound);
         }
     }
 
@@ -62,17 +63,26 @@ internal static class DecoratorAttributeRegistration
         Type serviceType,
         Type decoratorImplementationType,
         string? key,
-        bool treatOpenGenericsAsWildcard)
+        bool treatOpenGenericsAsWildcard,
+        bool throwWhenDecorationTypeNotFound)
     {
         if (!serviceType.IsGenericType || !decoratorImplementationType.IsGenericType)
         {
-            HandleNonGenericDecorators(serviceCollection, serviceType, decoratorImplementationType, key);
+            HandleNonGenericDecorators(serviceCollection,
+                serviceType,
+                decoratorImplementationType,
+                key,
+                throwWhenDecorationTypeNotFound);
         }
         else if (treatOpenGenericsAsWildcard
                  && serviceType.IsGenericType
                  && decoratorImplementationType.ContainsGenericParameters)
         {
-            HandleGenericDecoratorsWithTreatOpenGenericsAsWildcard(serviceCollection, serviceType, decoratorImplementationType, key);
+            HandleGenericDecoratorsWithTreatOpenGenericsAsWildcard(serviceCollection,
+                serviceType,
+                decoratorImplementationType,
+                key,
+                throwWhenDecorationTypeNotFound);
         }
         else
         {
@@ -80,8 +90,11 @@ internal static class DecoratorAttributeRegistration
         }
     }
 
-    private static void HandleGenericDecoratorsWithTreatOpenGenericsAsWildcard(IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType,
-        string? key)
+    private static void HandleGenericDecoratorsWithTreatOpenGenericsAsWildcard(IServiceCollection serviceCollection,
+        Type serviceType,
+        Type decoratorImplementationType,
+        string? key,
+        bool throwWhenDecorationTypeNotFound)
     {
         var descriptorsToDecorate = serviceCollection
             .Where(s =>
@@ -97,6 +110,11 @@ internal static class DecoratorAttributeRegistration
             .ToList();
         if (descriptorsToDecorate.Count == 0)
         {
+            if (!throwWhenDecorationTypeNotFound)
+            {
+                return;
+            }
+
             throw new ServiceDecorationException($"No services registered for type {serviceType.FullName} in ServiceCollection, Decoration is impossible.");
         }
 
@@ -120,7 +138,11 @@ internal static class DecoratorAttributeRegistration
         }
     }
 
-    private static void HandleNonGenericDecorators(IServiceCollection serviceCollection, Type serviceType, Type decoratorImplementationType, string? key)
+    private static void HandleNonGenericDecorators(IServiceCollection serviceCollection,
+        Type serviceType,
+        Type decoratorImplementationType,
+        string? key,
+        bool throwWhenDecorationTypeNotFound)
     {
         var descriptorsToDecorate = serviceCollection
             .Where(s =>
@@ -139,6 +161,11 @@ internal static class DecoratorAttributeRegistration
 
         if (descriptorsToDecorate.Count == 0)
         {
+            if (!throwWhenDecorationTypeNotFound)
+            {
+                return;
+            }
+
             throw new ServiceDecorationException($"No services registered for type {serviceType.FullName} in ServiceCollection, Decoration is impossible.");
         }
 
