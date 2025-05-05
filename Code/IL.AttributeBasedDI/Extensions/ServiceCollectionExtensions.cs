@@ -3,6 +3,7 @@ using IL.AttributeBasedDI.Helpers;
 using IL.AttributeBasedDI.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace IL.AttributeBasedDI.Extensions;
 
@@ -24,9 +25,11 @@ public static class ServiceCollectionExtensions
 
         var options = new FeatureBasedDIOptions(configuration);
         configureOptions?.Invoke(options);
-        serviceCollection.ConfigureOptions(options.ActiveFeatures);
+        serviceCollection.AddSingleton(Microsoft.Extensions.Options.Options.Create(options.ActiveFeatures));
 
-        var methodInfo = typeof(ServiceRegistrationHelper).GetMethod(nameof(ServiceRegistrationHelper.RegisterClassesWithServiceAttributeAndDecorators));
+        var methodInfo =
+            typeof(ServiceRegistrationHelper).GetMethod(nameof(ServiceRegistrationHelper
+                .RegisterClassesWithServiceAttributeAndDecorators));
 
         foreach (var filter in assemblyFilters!)
         {

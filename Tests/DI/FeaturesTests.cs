@@ -1,6 +1,8 @@
 using System.Text;
 using IL.AttributeBasedDI.Attributes;
+using IL.AttributeBasedDI.FeatureFlags;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace IL.AttributeBasedDI.Tests.DI;
 
@@ -62,8 +64,10 @@ public class FeatureEnabledAttributesTests
             }
         );
         var sp = serviceCollection.BuildServiceProvider();
-
+        
         // Assert
+        var flagSet = sp.GetRequiredService<IOptions<FeatureFlagSet>>();
+        Assert.NotNull(flagSet);
         var service1 = sp.GetRequiredService<Test1>();
         Assert.NotNull(service1);
         var service2 = sp.GetService<Test2>();
