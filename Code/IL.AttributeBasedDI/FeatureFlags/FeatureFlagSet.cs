@@ -2,13 +2,13 @@ using IL.AttributeBasedDI.Models;
 
 namespace IL.AttributeBasedDI.FeatureFlags;
 
-public sealed class FeatureFlagSet : IFeatureFlagSet
+public sealed class FeatureFlagSet
 {
     private readonly Dictionary<Type, Enum> _activeFeatures = new();
 
     public IReadOnlyCollection<Enum> AllFeatures => _activeFeatures.Values.ToList();
 
-    public FeatureFlagSet(params Enum[] features)
+    internal FeatureFlagSet(params Enum[] features)
     {
         // Always add FeatureNoop
         AddOrMerge(FeaturesNoop.None);
@@ -19,7 +19,7 @@ public sealed class FeatureFlagSet : IFeatureFlagSet
         }
     }
 
-    public void AddOrMerge(Enum feature)
+    internal void AddOrMerge(Enum feature)
     {
         var type = feature.GetType();
 

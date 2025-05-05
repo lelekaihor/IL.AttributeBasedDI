@@ -1,4 +1,5 @@
-﻿using IL.AttributeBasedDI.Helpers;
+﻿using IL.AttributeBasedDI.FeatureFlags;
+using IL.AttributeBasedDI.Helpers;
 using IL.AttributeBasedDI.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ public static class ServiceCollectionExtensions
 
         var options = new FeatureBasedDIOptions(configuration);
         configureOptions?.Invoke(options);
+        serviceCollection.ConfigureOptions(options.ActiveFeatures);
 
         var methodInfo = typeof(ServiceRegistrationHelper).GetMethod(nameof(ServiceRegistrationHelper.RegisterClassesWithServiceAttributeAndDecorators));
 
