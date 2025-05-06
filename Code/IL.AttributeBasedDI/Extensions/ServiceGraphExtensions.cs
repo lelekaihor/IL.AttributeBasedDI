@@ -7,9 +7,6 @@ public static class ServiceGraphExtensions
 {
         internal static void AddOrMerge<TFeatureFlag>(this ServiceGraph serviceGraph, RegistrationEntry<TFeatureFlag> registrationEntry) where TFeatureFlag : struct, Enum
         {
-#if !DEBUG
-     return;
-#endif
             try
             {
                 if (registrationEntry.ServiceType == null)
@@ -87,9 +84,6 @@ public static class ServiceGraphExtensions
         
         internal static void AddDecorator<TFeatureFlag>(this ServiceGraph serviceGraph, Type serviceType, Type decoratorImplementationType, string? key, TFeatureFlag feature, bool treatOpenGenericsAsWildcard = false) where TFeatureFlag : struct, Enum
         {
-#if !DEBUG
-     return;       
-#endif
             try
             {
                 var featureEnum = feature as Enum;
