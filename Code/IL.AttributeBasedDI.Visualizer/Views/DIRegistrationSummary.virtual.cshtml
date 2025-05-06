@@ -1,0 +1,356 @@
+﻿@using Newtonsoft.Json
+@model IL.AttributeBasedDI.Models.ServiceGraph
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DI Registration Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            overflow: auto;
+        }
+        
+        #graph-container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 600px;
+            overflow: auto;
+        }
+        
+        .node {
+            cursor: pointer;
+        }
+        
+        .node rect {
+            stroke: #555;
+            stroke-width: 1.5px;
+            rx: 5;
+            ry: 5;
+        }
+        
+        .node text {
+            font-size: 12px;
+            font-family: sans-serif;
+        }
+        
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 1.5px;
+        }
+        
+        .type-node rect {
+            fill: #d4eaf7;
+        }
+        
+        .service-node rect {
+            fill: #b3e0a2;
+        }
+        
+        .decorator-node rect {
+            fill: #ffd699;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .legend {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border: 1px solid #555;
+            border-radius: 3px;
+        }
+        
+        .type-color {
+            background-color: #d4eaf7;
+        }
+        
+        .service-color {
+            background-color: #b3e0a2;
+        }
+        
+        .decorator-color {
+            background-color: #ffd699;
+        }
+    </style>
+</head>
+<body>
+    <h1>DI Registration Summary</h1>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color type-color"></div>
+            <div>Type</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color service-color"></div>
+            <div>Service</div>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color decorator-color"></div>
+            <div>Decorator</div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div id="graph-container"></div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // Process the model data to create the graph structure
+        const graphData = @Html.Raw(JsonConvert.SerializeObject(Model));
+        
+        // Create the graph visualization
+        function createGraph(data) {
+            // Clear any existing graph
+            d3.select("#graph-container").html("");
+            
+            const margin = { top: 50, right: 120, bottom: 50, left: 120 };
+            const width = document.getElementById('graph-container').clientWidth - margin.left - margin.right;
+            const height = Math.max(600, Object.keys(data.ServicesByType).length * 150) - margin.top - margin.bottom;
+            
+            // Create the SVG container
+            const svg = d3.select("#graph-container")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // Process data to create nodes and links
+            const nodes = [];
+            const links = [];
+            let nodeId = 0;
+            
+            // Process types and services
+            Object.entries(data.ServicesByType).forEach(([typeName, services], typeIndex) => {
+                // Add type node
+                const typeNode = {
+                    id: nodeId++,
+                    name: getShortName(typeName),
+                    fullName: typeName,
+                    type: 'type',
+                    x: 0,
+                    y: typeIndex * 150
+                };
+                nodes.push(typeNode);
+                
+                // Process services for this type
+                services.forEach((service, serviceIndex) => {
+                    const serviceNode = {
+                        id: nodeId++,
+                        name: getShortName(service.ImplementationType),
+                        fullName: service.ImplementationType,
+                        lifetime: service.Lifetime,
+                        type: 'service',
+                        x: 200,
+                        y: typeNode.y + serviceIndex * 60 - (services.length - 1) * 30
+                    };
+                    nodes.push(serviceNode);
+                    
+                    // Link from type to service
+                    links.push({
+                        source: typeNode.id,
+                        target: serviceNode.id
+                    });
+                    
+                    // Process decorators for this service
+                    if (service.Decorators && service.Decorators.length > 0) {
+                        let prevNodeId = serviceNode.id;
+                        
+                        service.Decorators.forEach((decorator, decoratorIndex) => {
+                            const decoratorNode = {
+                                id: nodeId++,
+                                name: getShortName(decorator),
+                                fullName: decorator,
+                                type: 'decorator',
+                                order: decoratorIndex + 1,
+                                x: 400 + decoratorIndex * 150,
+                                y: serviceNode.y
+                            };
+                            nodes.push(decoratorNode);
+                            
+                            // Link from previous node to decorator
+                            links.push({
+                                source: prevNodeId,
+                                target: decoratorNode.id
+                            });
+                            
+                            prevNodeId = decoratorNode.id;
+                        });
+                    }
+                });
+            });
+            
+            // Create a force simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(150))
+                .force("charge", d3.forceManyBody().strength(-1000))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("x", d3.forceX().strength(0.1))
+                .force("y", d3.forceY().strength(0.1));
+            
+            // Add links
+            const link = svg.append("g")
+                .selectAll("path")
+                .data(links)
+                .enter()
+                .append("path")
+                .attr("class", "link")
+                .attr("marker-end", "url(#arrowhead)");
+            
+            // Define arrowhead marker
+            svg.append("defs").append("marker")
+                .attr("id", "arrowhead")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 20)
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("fill", "#999");
+            
+            // Add nodes
+            const node = svg.append("g")
+                .selectAll(".node")
+                .data(nodes)
+                .enter()
+                .append("g")
+                .attr("class", d => `node ${d.type}-node`)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+            
+            // Node rectangles
+            node.append("rect")
+                .attr("width", d => Math.max(d.name.length * 7, 100))
+                .attr("height", 40)
+                .attr("x", d => -(Math.max(d.name.length * 7, 100) / 2))
+                .attr("y", -20);
+            
+            // Node text
+            node.append("text")
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .text(d => d.name);
+            
+            // Tooltip functionality
+            node.on("mouseover", function(event, d) {
+                const tooltip = d3.select("#tooltip");
+                let tooltipContent = `<strong>Type:</strong> ${d.type}<br><strong>Full Name:</strong> ${d.fullName}`;
+                
+                if (d.type === 'service') {
+                    tooltipContent += `<br><strong>Lifetime:</strong> ${d.lifetime}`;
+                }
+                
+                if (d.type === 'decorator') {
+                    tooltipContent += `<br><strong>Order:</strong> ${d.order}`;
+                }
+                
+                tooltip.html(tooltipContent)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 20) + "px")
+                    .style("opacity", 1);
+            })
+            .on("mouseout", function() {
+                d3.select("#tooltip").style("opacity", 0);
+            });
+            
+            // Update positions on simulation tick
+            simulation.on("tick", () => {
+                link.attr("d", d => {
+                    const sourceX = d.source.x;
+                    const sourceY = d.source.y;
+                    const targetX = d.target.x;
+                    const targetY = d.target.y;
+                    
+                    return `M${sourceX},${sourceY}L${targetX},${targetY}`;
+                });
+                
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+            
+            // Zoom functionality
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 3])
+                .on("zoom", (event) => {
+                    svg.attr("transform", event.transform);
+                });
+            
+            d3.select("#graph-container svg")
+                .call(zoom);
+            
+            // Drag functions
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+        
+        // Helper function to get short name from fully qualified name
+        function getShortName(fullName) {
+            if (!fullName) return "Unknown";
+            const parts = fullName.split('.');
+            return parts[parts.length - 1];
+        }
+        
+        // Create the graph when the document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            createGraph(graphData);
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                createGraph(graphData);
+            });
+        });
+    </script>
+</body>
+</html>
