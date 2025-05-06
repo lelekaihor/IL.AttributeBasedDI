@@ -4,5 +4,6 @@
   </Folder>
   <Project Path="Code/IL.AttributeBasedDI.Analyzer/IL.AttributeBasedDI.Analyzer.csproj" />
   <Project Path="Code/IL.AttributeBasedDI/IL.AttributeBasedDI.csproj" />
+  <Project Path="Code\IL.AttributeBasedDI.Visualizer\IL.AttributeBasedDI.Visualizer.csproj" Type="Classic C#" />
   <Project Path="Tests/IL.AttributeBasedDI.Tests.csproj" />
 </Solution>
