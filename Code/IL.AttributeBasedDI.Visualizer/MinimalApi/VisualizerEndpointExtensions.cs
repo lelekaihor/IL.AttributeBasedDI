@@ -8,7 +8,7 @@ namespace IL.AttributeBasedDI.Visualizer.MinimalApi;
 
 public static class VisualizerEndpointExtensions
 {
-    public static RouteHandlerBuilder MapAdminPanelEndpoints(this WebApplication app, string visualizerPath = "diVisualizer")
+    public static RouteHandlerBuilder MapDiVisualizerEndpoint(this WebApplication app, string visualizerPath = "diVisualizer")
     {
         return app.MapGet(visualizerPath.TrimStart('/'),
             async ([FromKeyedServices(Constants.ServiceGraphKey)] ServiceGraph serviceGraph, 
