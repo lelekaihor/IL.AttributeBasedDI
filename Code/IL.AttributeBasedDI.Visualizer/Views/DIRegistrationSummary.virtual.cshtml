@@ -1,4 +1,6 @@
-﻿@using Newtonsoft.Json
+﻿@using IL.AttributeBasedDI.Visualizer.Converters
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Converters
 @model IL.AttributeBasedDI.Models.ServiceGraph
 
 <!DOCTYPE html>
@@ -131,7 +133,10 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         // Process the model data to create the graph structure
-        const graphData = @Html.Raw(JsonConvert.SerializeObject(Model));
+        const graphData = @Html.Raw(JsonConvert.SerializeObject(Model,
+    Formatting.Indented, 
+    new StringEnumConverter(),
+    new CustomTypeConverter()));
         
         // Create the graph visualization
         function createGraph(data) {
@@ -175,6 +180,7 @@
                         name: getShortName(service.ImplementationType),
                         fullName: service.ImplementationType,
                         lifetime: service.Lifetime,
+                        features: service.Features || [],
                         type: 'service',
                         x: 200,
                         y: typeNode.y + serviceIndex * 60 - (services.length - 1) * 30
@@ -277,6 +283,14 @@
                 
                 if (d.type === 'service') {
                     tooltipContent += `<br><strong>Lifetime:</strong> ${d.lifetime}`;
+                    
+                    if (d.features && d.features.length > 0) {
+                        tooltipContent += `<br><strong>Features:</strong> <ul style="margin:2px 0 0 15px; padding:0">`;
+                        d.features.forEach(feature => {
+                            tooltipContent += `<li>${feature}</li>`;
+                        });
+                        tooltipContent += `</ul>`;
+                    }
                 }
                 
                 if (d.type === 'decorator') {
@@ -338,7 +352,7 @@
         // Helper function to get short name from fully qualified name
         function getShortName(fullName) {
             if (!fullName) return "Unknown";
-            const parts = fullName.split('.');
+            const parts = fullName.split(',')[0].split('.');
             return parts[parts.length - 1];
         }
         
