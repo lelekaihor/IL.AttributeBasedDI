@@ -1,4 +1,5 @@
 ﻿using IL.AttributeBasedDI.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IL.AttributeBasedDI.Attributes;
 
@@ -11,7 +12,7 @@ public class ServiceAttribute : ServiceAttribute<FeaturesNoop>
     /// If left null/default service will be automatically retrieved either from first interface current class implements or the class itself will become a serviceType.</param>
     /// <param name="lifetime">Specifies service lifetime.</param>
     /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
-    public ServiceAttribute(Type? serviceType = null, Lifetime lifetime = Lifetime.Transient, string? key = null) : base(serviceType, lifetime, key)
+    public ServiceAttribute(Type? serviceType = null, ServiceLifetime lifetime = ServiceLifetime.Transient, string? key = null) : base(serviceType, lifetime, key)
     {
     }
 }
@@ -30,14 +31,14 @@ public class ServiceAttribute<TFeatureFlag> : DependencyInjectionAttributeBase<T
     /// <param name="lifetime">Specifies service lifetime.</param>
     /// <param name="key">Specifies key which current service will be accessible for as KeyedService from IKeyedServiceProvider</param>
     /// <param name="feature">Feature flag</param>
-    public ServiceAttribute(Type? serviceType = null, Lifetime lifetime = Lifetime.Transient, string? key = null, TFeatureFlag feature = default) : base(feature)
+    public ServiceAttribute(Type? serviceType = null, ServiceLifetime lifetime = ServiceLifetime.Transient, string? key = null, TFeatureFlag feature = default) : base(feature)
     {
         ServiceType = serviceType;
         Lifetime = lifetime;
         Key = key;
     }
 
-    public Lifetime Lifetime { get; init; }
+    public ServiceLifetime Lifetime { get; init; }
 
     public string? Key { get; init; }
 }

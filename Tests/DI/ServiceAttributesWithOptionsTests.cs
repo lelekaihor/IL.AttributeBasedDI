@@ -12,12 +12,12 @@ using Xunit;
 
 public class ServiceTestOptions : IServiceConfiguration
 {
-    static string? IServiceConfiguration.ConfigurationPath => "AppSettings:Test";
+    static string IServiceConfiguration.ConfigurationPath => "AppSettings:Test";
 
     public string Option1 { get; set; } = "test123";
 }
 
-[ServiceWithOptions<ServiceTestOptions>(Lifetime = Lifetime.Singleton)]
+[ServiceWithOptions<ServiceTestOptions>(Lifetime = ServiceLifetime.Singleton)]
 public class TestServiceWithOptions
 {
     private readonly ServiceTestOptions _serviceConfiguration;
@@ -37,7 +37,7 @@ public class ServiceTestOptions1 : IServiceConfiguration
     public string Option1 { get; set; } = "test123";
 }
 
-[ServiceWithOptions<ServiceTestOptions1>(Lifetime = Lifetime.Singleton)]
+[ServiceWithOptions<ServiceTestOptions1>(Lifetime = ServiceLifetime.Singleton)]
 public class TestServiceWithOptions1
 {
     private readonly ServiceTestOptions1 _serviceConfiguration;

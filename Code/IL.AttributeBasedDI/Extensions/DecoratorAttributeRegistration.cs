@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using IL.AttributeBasedDI.Attributes;
 using IL.AttributeBasedDI.Exceptions;
 using IL.AttributeBasedDI.Helpers;
+using IL.AttributeBasedDI.Models;
 using IL.Misc.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -14,6 +15,7 @@ internal static class DecoratorAttributeRegistration
     private const string WildcardKey = "*";
 
     public static void RegisterClassesWithDecoratorAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
+        DiRegistrationSummary diRegistrationSummary,
         TFeatureFlag activeFeatures,
         bool throwWhenDecorationTypeNotFound,
         params Type[] types)
@@ -55,6 +57,11 @@ internal static class DecoratorAttributeRegistration
                 serviceDecorationEntry.Key,
                 serviceDecorationEntry.TreatOpenGenericsAsWildcard,
                 throwWhenDecorationTypeNotFound);
+            diRegistrationSummary.ServiceGraph.AddDecorator(serviceDecorationEntry.ServiceType,
+                serviceDecorationEntry.DecoratorImplementationType,
+                serviceDecorationEntry.Key, 
+                serviceDecorationEntry.Feature,
+                serviceDecorationEntry.TreatOpenGenericsAsWildcard);
         }
     }
 

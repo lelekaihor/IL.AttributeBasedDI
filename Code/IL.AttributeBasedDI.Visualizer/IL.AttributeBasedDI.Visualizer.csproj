@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Title>Attribute Based Dependency Injection Visualizer</Title>
+    <Description>Extension for IL.AttributeBasedDI</Description>
+    <PackageProjectUrl>https://github.com/lelekaihor/IL.AttributeBasedDI.Visualizer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lelekaihor/IL.AttributeBasedDI.Visualizer</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath="" />
+    <None Include="README.md" Pack="true" Visible="false" PackagePath="" />
+    <None Include="Views\DIRegistrationSummary.cs" />
+  </ItemGroup>
+
+  <!-- Use project reference when building locally -->
+  <ItemGroup Condition="'$(CI)' != 'true'">
+    <ProjectReference Include="..\IL.AttributeBasedDI\IL.AttributeBasedDI.csproj" />
+  </ItemGroup>
+
+  <!-- Use package reference when building in CI/release -->
+  <ItemGroup Condition="'$(CI)' == 'true'">
+    <PackageReference Include="IL.AttributeBasedDI" Version="$(PackageVersion)" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="IL.VirtualViews" Version="1.7.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Views\DIRegistrationSummary.virtual.cshtml" />
+    <AdditionalFiles Include="Views\DIRegistrationSummary.virtual.cshtml" />
+  </ItemGroup>
+
+
+</Project>

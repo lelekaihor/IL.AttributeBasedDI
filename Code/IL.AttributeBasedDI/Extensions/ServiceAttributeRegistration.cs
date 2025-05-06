@@ -9,7 +9,10 @@ namespace IL.AttributeBasedDI.Extensions;
 
 internal static class ServiceAttributeRegistration
 {
-    public static void RegisterClassesWithServiceAttributes<TFeatureFlag>(this IServiceCollection serviceCollection, TFeatureFlag activeFeatures, params Type[] types)
+    public static void RegisterClassesWithServiceAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
+        DiRegistrationSummary diRegistrationSummary, 
+        TFeatureFlag activeFeatures, 
+        params Type[] types)
         where TFeatureFlag : struct, Enum
     {
         var serviceRegistrations = types
@@ -28,16 +31,18 @@ internal static class ServiceAttributeRegistration
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ImplementationType,
                     null,
-                    serviceRegistrationEntry.ServiceLifetime,
+                    serviceRegistrationEntry.Lifetime,
                     serviceRegistrationEntry.Key);
             }
             else
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ServiceType,
                     serviceRegistrationEntry.ImplementationType,
-                    serviceRegistrationEntry.ServiceLifetime,
+                    serviceRegistrationEntry.Lifetime,
                     serviceRegistrationEntry.Key);
             }
+            
+            diRegistrationSummary.ServiceGraph.AddOrMerge(serviceRegistrationEntry);
         }
     }
 
@@ -47,7 +52,7 @@ internal static class ServiceAttributeRegistration
         return new RegistrationEntry<TFeatureFlag>
         {
             Key = attribute.Key,
-            ServiceLifetime = attribute.Lifetime,
+            Lifetime = attribute.Lifetime,
             ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, attribute),
             ImplementationType = type,
             Feature = attribute.Feature
@@ -58,14 +63,14 @@ internal static class ServiceAttributeRegistration
         this IServiceCollection serviceCollection,
         Type serviceType,
         Type? implementationType,
-        Lifetime lifetime,
+        ServiceLifetime lifetime,
         string? key)
     {
         implementationType ??= serviceType;
 
         switch (lifetime)
         {
-            case Lifetime.Singleton:
+            case ServiceLifetime.Singleton:
                 if (!string.IsNullOrEmpty(key))
                 {
                     serviceCollection.AddKeyedSingleton(serviceType, key, implementationType);
@@ -77,7 +82,7 @@ internal static class ServiceAttributeRegistration
 
                 break;
 
-            case Lifetime.Transient:
+            case ServiceLifetime.Transient:
                 if (!string.IsNullOrEmpty(key))
                 {
                     serviceCollection.AddKeyedTransient(serviceType, key, implementationType);
@@ -89,7 +94,7 @@ internal static class ServiceAttributeRegistration
 
                 break;
 
-            case Lifetime.Scoped:
+            case ServiceLifetime.Scoped:
                 if (!string.IsNullOrEmpty(key))
                 {
                     serviceCollection.AddKeyedScoped(serviceType, key, implementationType);

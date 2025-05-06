@@ -41,7 +41,7 @@ public class ServiceRegistration
 
         var builder = new ConfigurationBuilder();
         var configuration = builder.Build();
-        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
+        var res = serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
         var sp = serviceCollection.BuildServiceProvider();
 
         Assert.NotNull(sp.GetService<Test123>());

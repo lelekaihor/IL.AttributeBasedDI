@@ -11,6 +11,7 @@ namespace IL.AttributeBasedDI.Extensions;
 internal static class ServiceWithOptionsAttributeRegistration
 {
     public static void RegisterClassesWithServiceAttributesWithOptions<TFeatureFlag>(this IServiceCollection serviceCollection,
+        DiRegistrationSummary diRegistrationSummary,
         TFeatureFlag activeFeatures,
         IConfiguration? configuration = null,
         params Type[] types) where TFeatureFlag : struct, Enum
@@ -41,16 +42,18 @@ internal static class ServiceWithOptionsAttributeRegistration
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ImplementationType,
                     null,
-                    serviceRegistrationEntry.ServiceLifetime,
+                    serviceRegistrationEntry.Lifetime,
                     serviceRegistrationEntry.Key);
             }
             else
             {
                 serviceCollection.AddServiceWithLifetime(serviceRegistrationEntry.ServiceType,
                     serviceRegistrationEntry.ImplementationType,
-                    serviceRegistrationEntry.ServiceLifetime,
+                    serviceRegistrationEntry.Lifetime,
                     serviceRegistrationEntry.Key);
             }
+            
+            diRegistrationSummary.ServiceGraph.AddOrMerge(serviceRegistrationEntry);
         }
     }
 

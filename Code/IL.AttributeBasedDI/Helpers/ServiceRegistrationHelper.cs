@@ -1,6 +1,7 @@
 using System.Reflection;
 using IL.AttributeBasedDI.Attributes;
 using IL.AttributeBasedDI.Extensions;
+using IL.AttributeBasedDI.Models;
 using IL.Misc.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ namespace IL.AttributeBasedDI.Helpers;
 internal static class ServiceRegistrationHelper
 {
     public static void RegisterClassesWithServiceAttributeAndDecorators<TFeatureFlag>(this IServiceCollection serviceCollection,
+        DiRegistrationSummary diRegistrationSummary,
         TFeatureFlag activeFeatures,
         IConfiguration configuration,
         bool throwWhenDecorationTypeNotFound,
@@ -17,9 +19,9 @@ internal static class ServiceRegistrationHelper
     {
         var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
         var allTypes = GetAllTypesFromAssemblies(assemblies);
-        serviceCollection.RegisterClassesWithServiceAttributes(activeFeatures, allTypes);
-        serviceCollection.RegisterClassesWithServiceAttributesWithOptions(activeFeatures, configuration, allTypes);
-        serviceCollection.RegisterClassesWithDecoratorAttributes(activeFeatures, throwWhenDecorationTypeNotFound, allTypes);
+        serviceCollection.RegisterClassesWithServiceAttributes(diRegistrationSummary, activeFeatures, allTypes);
+        serviceCollection.RegisterClassesWithServiceAttributesWithOptions(diRegistrationSummary, activeFeatures, configuration, allTypes);
+        serviceCollection.RegisterClassesWithDecoratorAttributes(diRegistrationSummary, activeFeatures, throwWhenDecorationTypeNotFound, allTypes);
     }
 
     public static Type? GetServiceTypeBasedOnDependencyInjectionAttribute<TFeatureFlag>(Type sourceType,

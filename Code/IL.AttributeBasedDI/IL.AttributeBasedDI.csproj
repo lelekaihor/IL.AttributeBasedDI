@@ -1,20 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageVersion>2.3.3</PackageVersion>
     <Title>Attribute Based Dependency Injection</Title>
-    <Authors>Ihor Leleka</Authors>
     <Description>Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection</Description>
-    <Copyright>Ihor Leleka</Copyright>
     <PackageProjectUrl>https://github.com/lelekaihor/IL.AttributeBasedDI</PackageProjectUrl>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RepositoryUrl>https://github.com/lelekaihor/IL.AttributeBasedDI</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,37 +1,35 @@
-﻿using IL.AttributeBasedDI.FeatureFlags;
-using IL.AttributeBasedDI.Helpers;
+﻿using IL.AttributeBasedDI.Helpers;
+using IL.AttributeBasedDI.Models;
 using IL.AttributeBasedDI.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace IL.AttributeBasedDI.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
+    public static DiRegistrationSummary AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
         IConfiguration configuration,
         params string[] assemblyFilters)
     {
-        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration, null, assemblyFilters);
+        return serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration, null, assemblyFilters);
     }
 
-    public static void AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
+    public static DiRegistrationSummary AddServiceAttributeBasedDependencyInjection(this IServiceCollection serviceCollection,
         IConfiguration configuration,
         Action<FeatureBasedDIOptions>? configureOptions = null,
         params string[] assemblyFilters)
     {
         PreventEmptyAssemblyFilters(ref assemblyFilters);
-
+        var registrationResult = new DiRegistrationSummary(serviceCollection);
         var options = new FeatureBasedDIOptions(configuration);
         configureOptions?.Invoke(options);
         serviceCollection.AddSingleton(Microsoft.Extensions.Options.Options.Create(options.ActiveFeatures));
 
-        var methodInfo =
-            typeof(ServiceRegistrationHelper).GetMethod(nameof(ServiceRegistrationHelper
-                .RegisterClassesWithServiceAttributeAndDecorators));
+        var methodInfo = typeof(ServiceRegistrationHelper)
+            .GetMethod(nameof(ServiceRegistrationHelper.RegisterClassesWithServiceAttributeAndDecorators));
 
-        foreach (var filter in assemblyFilters!)
+        foreach (var filter in assemblyFilters)
         {
             foreach (var featureEnum in options.ActiveFeatures.AllFeatures)
             {
@@ -42,6 +40,7 @@ public static class ServiceCollectionExtensions
                 genericMethod.Invoke(null,
                     [
                         serviceCollection,
+                        registrationResult,
                         featureEnum,
                         configuration,
                         options.ThrowWhenDecorationTypeNotFound,
@@ -50,6 +49,8 @@ public static class ServiceCollectionExtensions
                 );
             }
         }
+        
+        return registrationResult;
     }
 
     private static void PreventEmptyAssemblyFilters(ref string[] assemblyFilters)

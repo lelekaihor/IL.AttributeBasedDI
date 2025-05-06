@@ -1,10 +1,10 @@
-using IL.AttributeBasedDI.Attributes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IL.AttributeBasedDI.Models;
 
 internal sealed class RegistrationEntry<TFeatureFlag> where TFeatureFlag : struct, Enum
 {
-    public Lifetime ServiceLifetime { get; init; }
+    public ServiceLifetime Lifetime { get; init; }
 
     public Type? ServiceType { get; init; }
 
