@@ -9,7 +9,8 @@ public sealed class CustomTypeConverter : JsonConverter
         // Only handle Type objects
         if (value is Type type)
         {
-            writer.WriteValue(type.FullName);
+            writer.WriteValue(BeautifyType(type));
+
         }
         else
         {
@@ -27,4 +28,43 @@ public sealed class CustomTypeConverter : JsonConverter
     {
         return typeof(Type).IsAssignableFrom(objectType);
     }
+    
+    private static string BeautifyType(Type type)
+    {
+        var assemblyName = type.Assembly.GetName().Name;
+        var simpleName = GetTypeSignature(type, false);
+        var fullName = GetTypeSignature(type, true);
+
+        return $"{simpleName}|{fullName}, {assemblyName}";
+    }
+
+    private static string GetTypeSignature(Type type, bool useFullName)
+    {
+        if (type.IsGenericType)
+        {
+            var genericTypeDef = type.GetGenericTypeDefinition();
+            var baseName = useFullName
+                ? genericTypeDef.FullName?.Split('`')[0]
+                : genericTypeDef.Name.Split('`')[0];
+
+            var genericArgs = type.IsGenericTypeDefinition
+                ? genericTypeDef.GetGenericArguments()
+                : type.GetGenericArguments();
+
+            var argNames = genericArgs
+                .Select(arg =>
+                    arg.IsGenericParameter
+                        ? arg.Name
+                        : GetTypeSignature(arg, useFullName)
+                )
+                .ToArray();
+
+            return $"{baseName}<{string.Join(", ", argNames)}>";
+        }
+
+        return useFullName
+            ? type.FullName ?? type.Name
+            : type.Name;
+    }
+
 }
