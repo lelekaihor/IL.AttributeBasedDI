@@ -29,7 +29,7 @@ public sealed class CustomTypeConverter : JsonConverter
         return typeof(Type).IsAssignableFrom(objectType);
     }
     
-    private static string BeautifyType(Type type)
+    public static string BeautifyType(Type type)
     {
         var assemblyName = type.Assembly.GetName().Name;
         var simpleName = GetTypeSignature(type, false);

@@ -7,18 +7,14 @@
 <html>
 <head>
     <title>DI Registration Summary</title>
+    <meta name="color-scheme" content="dark">
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background: #17181c;
-            color: #e2e2e7;
-        }
-    
-        h1 {
-            color: #fafafc;
-            letter-spacing: 1px;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
         }
     
         .container {
@@ -27,79 +23,71 @@
         }
     
         #graph-container {
-            background: #23242a;
-            border: 1px solid #24242c;
-            border-radius: 8px;
+            border: 1px solid #444444;
+            border-radius: 5px;
             padding: 20px;
             min-height: 600px;
-            box-shadow: 0 0 26px 0 rgba(30, 30, 45, 0.47);
             overflow: auto;
+            background-color: #2d2d2d;
         }
     
         .node {
             cursor: pointer;
-            transition: filter 0.2s, transform 0.1s;
-            filter: drop-shadow(0 2px 6px #1117);
-        }
-    
-        .node:hover {
-            filter: brightness(1.1) drop-shadow(0 4px 12px #0009);
-            transform: scale(1.03);
         }
     
         .node rect {
-            stroke: #6c63ff;
-            stroke-width: 2px;
-            rx: 8;
-            ry: 8;
+            stroke: #888888;
+            stroke-width: 1.5px;
+            rx: 5;
+            ry: 5;
         }
     
         .node text {
-            font-size: 13px;
-            font-family: 'Segoe UI', sans-serif;
-            fill: #fafafc;
-            pointer-events: none;
-            user-select: none;
+            font-size: 12px;
+            font-family: sans-serif;
+            fill: #e0e0e0;
         }
     
         .link {
             fill: none;
-            stroke: #555971;
-            stroke-width: 2px;
-            opacity: 0.82;
+            stroke: #777777;
+            stroke-width: 1.5px;
         }
     
         .type-node rect {
-            fill: #283150;
+            fill: #264b63;
         }
     
         .service-node rect {
-            fill: #23785f;
+            fill: #2a5a2a;
         }
     
         .decorator-node rect {
-            fill: #b47b21;
+            fill: #8b6b2b;
+        }
+        
+        rect[stroke-dasharray="5,5"] {
+            stroke-width: 2px;
         }
     
         .tooltip {
             position: absolute;
-            background: #23242a;
-            border: 1px solid #6c63ff;
-            border-radius: 6px;
-            padding: 10px 14px;
+            background-color: #3d3d3d;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            padding: 8px;
             font-size: 12px;
             pointer-events: none;
-            color: #fafafc;
             opacity: 0;
-            box-shadow: 0 2px 16px #111a;
-            transition: opacity 0.2s, background 0.2s;
-            z-index: 1000;
+            transition: opacity 0.2s;
+            color: #e0e0e0;
         }
     
         .legend {
             margin-bottom: 20px;
             display: flex;
-            gap: 22px;
+            gap: 20px;
+            flex-wrap: wrap;
         }
     
         .legend-item {
@@ -109,351 +97,398 @@
         }
     
         .legend-color {
-            width: 22px;
-            height: 22px;
-            margin-right: 9px;
-            border: 1px solid #666;
-            border-radius: 4px;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border: 1px solid #888888;
+            border-radius: 3px;
         }
     
         .type-color {
-            background: #283150;
+            background-color: #264b63;
         }
     
         .service-color {
-            background: #23785f;
+            background-color: #2a5a2a;
         }
     
         .decorator-color {
-            background: #b47b21;
+            background-color: #8b6b2b;
         }
-    
-        .copy-toast {
+        
+        .context-menu {
+            position: absolute;
+            background-color: #3d3d3d;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            padding: 0;
+            min-width: 150px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            list-style: none;
+            color: #e0e0e0;
+        }
+        
+        .context-menu-item:hover {
+            background-color: #4d4d4d;
+        }
+        
+        .copy-success {
             position: fixed;
-            left: 50%;
-            top: 85px;
-            transform: translateX(-50%);
-            background: #2a2a52;
-            color: #e2e2ff;
-            border-radius: 8px;
-            padding: 10px 18px;
-            font-size: 15px;
-            letter-spacing: 0.04em;
-            z-index: 9999;
+            top: 20px;
+            right: 20px;
+            background-color: #2a5a2a;
+            color: #e0e0e0;
+            padding: 10px 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s;
-            border: 1px solid #6c63ff;
-            box-shadow: 0 4px 18px #0008;
-        }
-        .copy-toast.visible {
-            opacity: 1;
-            pointer-events: auto;
+            transition: opacity 0.3s;
+            z-index: 1100;
         }
     </style>
 </head>
 <body>
-    <h1>DI Registration Summary</h1>
-    
-    <div class="legend">
-        <div class="legend-item">
-            <div class="legend-color type-color"></div>
-            <div>Type</div>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color service-color"></div>
-            <div>Service</div>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color decorator-color"></div>
-            <div>Decorator</div>
-        </div>
+<h1>DI Registration Summary</h1>
+
+<div class="legend">
+    <div class="legend-item">
+        <div class="legend-color type-color"></div>
+        <div>Type</div>
     </div>
-    
-    <div class="container">
-        <div id="graph-container"></div>
+    <div class="legend-item">
+        <div class="legend-color service-color"></div>
+        <div>Service</div>
     </div>
-    
-    <div class="tooltip" id="tooltip"></div>
-    <div class="copy-toast" id="copy-toast">Copied!</div>
-    
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script>
-        // Process the model data to create the graph structure
-        const graphData = @Html.Raw(JsonConvert.SerializeObject(Model,
-    Formatting.Indented, 
+    <div class="legend-item">
+        <div class="legend-color decorator-color"></div>
+        <div>Decorator</div>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color service-color" style="border-style: dashed; border-width: 2px;"></div>
+        <div>Keyed Service</div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="graph-container"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" id="copyFullName">Copy Full Name</div>
+</div>
+<div class="copy-success" id="copySuccess">Full name copied to clipboard!</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+    @{
+    var dict = Model.ServicesByType.ToDictionary(
+    x => CustomTypeConverter.BeautifyType(x.Key),
+    y => y.Value
+    );
+    var graphDataJson = JsonConvert.SerializeObject(
+    dict,
+    Formatting.Indented,
     new StringEnumConverter(),
-    new CustomTypeConverter()));
-        
-        // Create the graph visualization
-        function createGraph(data) {
-            // Clear any existing graph
-            d3.select("#graph-container").html("");
-            
-            const margin = { top: 50, right: 120, bottom: 50, left: 120 };
-            const width = document.getElementById('graph-container').clientWidth - margin.left - margin.right;
-            const height = Math.max(600, Object.keys(data.ServicesByType).length * 150) - margin.top - margin.bottom;
-            
-            // Create the SVG container
-            const svg = d3.select("#graph-container")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-            
-            // Process data to create nodes and links
-            const nodes = [];
-            const links = [];
-            let nodeId = 0;
-            
-            // Process types and services
-            Object.entries(data.ServicesByType).forEach(([typeName, services], typeIndex) => {
-                // Add type node
-                const typeNode = {
+    new CustomTypeConverter()
+    );
+    }
+    
+    const graphData = @Html.Raw(graphDataJson);
+
+    // Create the graph visualization
+    function createGraph(data) {
+        // Clear any existing graph
+        d3.select("#graph-container").html("");
+
+        const margin = { top: 50, right: 120, bottom: 50, left: 120 };
+        const width = document.getElementById('graph-container').clientWidth - margin.left - margin.right;
+        const height = Math.max(600, Object.keys(data).length * 150) - margin.top - margin.bottom;
+
+        // Create the SVG container
+        const svg = d3.select("#graph-container")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Process data to create nodes and links
+        const nodes = [];
+        const links = [];
+        let nodeId = 0;
+
+        // Process types and services
+        Object.entries(data).forEach(([typeName, services], typeIndex) => {
+            // Add type node
+            const typeNode = {
+                id: nodeId++,
+                name: getShortName(typeName),
+                fullName: getFullName(typeName),
+                type: 'type',
+                x: 0,
+                y: typeIndex * 150
+            };
+            nodes.push(typeNode);
+
+            // Process services for this type
+            services.forEach((service, serviceIndex) => {
+                const serviceNode = {
                     id: nodeId++,
-                    name: getShortName(typeName),
-                    fullName: getFullyQualifiedName(typeName),
-                    type: 'type',
-                    x: 0,
-                    y: typeIndex * 150
+                    name: getShortName(service.ImplementationType),
+                    fullName: getFullName(service.ImplementationType),
+                    lifetime: service.Lifetime,
+                    features: service.Features || [],
+                    key: service.Key || null,
+                    type: 'service',
+                    x: 200,
+                    y: typeNode.y + serviceIndex * 60 - (services.length - 1) * 30
                 };
-                nodes.push(typeNode);
-                
-                // Process services for this type
-                services.forEach((service, serviceIndex) => {
-                    const serviceNode = {
-                        id: nodeId++,
-                        name: getShortName(service.ImplementationType),
-                        fullName: getFullyQualifiedName(service.ImplementationType),
-                        lifetime: service.Lifetime,
-                        features: service.Features || [],
-                        type: 'service',
-                        x: 200,
-                        y: typeNode.y + serviceIndex * 60 - (services.length - 1) * 30
-                    };
-                    nodes.push(serviceNode);
-                    
-                    // Link from type to service
-                    links.push({
-                        source: typeNode.id,
-                        target: serviceNode.id
-                    });
-                    
-                    // Process decorators for this service
-                    if (service.Decorators && service.Decorators.length > 0) {
-                        let prevNodeId = serviceNode.id;
-                        
-                        service.Decorators.forEach((decorator, decoratorIndex) => {
-                            const decoratorNode = {
-                                id: nodeId++,
-                                name: getShortName(decorator),
-                                fullName: getFullyQualifiedName(decorator),
-                                type: 'decorator',
-                                order: decoratorIndex + 1,
-                                x: 400 + decoratorIndex * 150,
-                                y: serviceNode.y
-                            };
-                            nodes.push(decoratorNode);
-                            
-                            // Link from previous node to decorator
-                            links.push({
-                                source: prevNodeId,
-                                target: decoratorNode.id
-                            });
-                            
-                            prevNodeId = decoratorNode.id;
-                        });
-                    }
+                nodes.push(serviceNode);
+
+                // Link from type to service
+                links.push({
+                    source: typeNode.id,
+                    target: serviceNode.id
                 });
-            });
-            
-            // Create a force simulation
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id).distance(150))
-                .force("charge", d3.forceManyBody().strength(-1000))
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("x", d3.forceX().strength(0.1))
-                .force("y", d3.forceY().strength(0.1));
-            
-            // Add links
-            const link = svg.append("g")
-                .selectAll("path")
-                .data(links)
-                .enter()
-                .append("path")
-                .attr("class", "link")
-                .attr("marker-end", "url(#arrowhead)");
-            
-            // Define arrowhead marker
-            svg.append("defs").append("marker")
-                .attr("id", "arrowhead")
-                .attr("viewBox", "0 -5 10 10")
-                .attr("refX", 20)
-                .attr("refY", 0)
-                .attr("markerWidth", 6)
-                .attr("markerHeight", 6)
-                .attr("orient", "auto")
-                .append("path")
-                .attr("d", "M0,-5L10,0L0,5")
-                .attr("fill", "#999");
-            
-            // Add nodes
-            const node = svg.append("g")
-                .selectAll(".node")
-                .data(nodes)
-                .enter()
-                .append("g")
-                .attr("class", d => `node ${d.type}-node`)
-                .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended));
-            
-            // Node rectangles
-            node.append("rect")
-                .attr("width", d => Math.max(d.name.length * 7, 100))
-                .attr("height", 40)
-                .attr("x", d => -(Math.max(d.name.length * 7, 100) / 2))
-                .attr("y", -20);
-            
-            // Node text
-            node.append("text")
-                .attr("dy", ".35em")
-                .attr("text-anchor", "middle")
-                .text(d => d.name);
-            
-            // Tooltip functionality
-            node.on("mouseover", function(event, d) {
-                const tooltip = d3.select("#tooltip");
-                let tooltipContent = `<strong>Type:</strong> ${d.type}<br><strong>Full Name:</strong> ${getFullyQualifiedName(d.fullName)}`;
-                
-                if (d.type === 'service') {
-                    tooltipContent += `<br><strong>Lifetime:</strong> ${d.lifetime}`;
-                    
-                    if (d.features && d.features.length > 0) {
-                        tooltipContent += `<br><strong>Features:</strong> <ul style="margin:2px 0 0 15px; padding:0">`;
-                        d.features.forEach(feature => {
-                            tooltipContent += `<li>${feature}</li>`;
+
+                // Process decorators for this service
+                if (service.Decorators && service.Decorators.length > 0) {
+                    let prevNodeId = serviceNode.id;
+
+                    service.Decorators.forEach((decorator, decoratorIndex) => {
+                        const decoratorNode = {
+                            id: nodeId++,
+                            name: getShortName(decorator),
+                            fullName: getFullName(decorator),
+                            type: 'decorator',
+                            order: decoratorIndex + 1,
+                            x: 400 + decoratorIndex * 150,
+                            y: serviceNode.y
+                        };
+                        nodes.push(decoratorNode);
+
+                        // Link from previous node to decorator
+                        links.push({
+                            source: prevNodeId,
+                            target: decoratorNode.id
                         });
-                        tooltipContent += `</ul>`;
-                    }
+
+                        prevNodeId = decoratorNode.id;
+                    });
                 }
-                
-                if (d.type === 'decorator') {
-                    tooltipContent += `<br><strong>Order:</strong> ${d.order}`;
+            });
+        });
+
+        // Create a force simulation
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(150))
+            .force("charge", d3.forceManyBody().strength(-1000))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("x", d3.forceX().strength(0.1))
+            .force("y", d3.forceY().strength(0.1));
+
+        // Add links
+        const link = svg.append("g")
+            .selectAll("path")
+            .data(links)
+            .enter()
+            .append("path")
+            .attr("class", "link")
+            .attr("marker-end", "url(#arrowhead)");
+
+        // Define arrowhead marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 20)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#777777");
+
+        // Add nodes
+        const node = svg.append("g")
+            .selectAll(".node")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", d => `node ${d.type}-node`)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        // Node rectangles
+        node.append("rect")
+            .attr("width", d => Math.max(d.name.length * 7, 100))
+            .attr("height", 40)
+            .attr("x", d => -(Math.max(d.name.length * 7, 100) / 2))
+            .attr("y", -20)
+            .attr("stroke-dasharray", d => (d.type === 'service' && d.key) ? "5,5" : "none");
+
+        // Node text
+        node.append("text")
+            .attr("dy", ".35em")
+            .attr("text-anchor", "middle")
+            .text(d => d.name);
+
+        // Tooltip functionality
+        node.on("mouseover", function(event, d) {
+            const tooltip = d3.select("#tooltip");
+            let tooltipContent = `<strong>Type:</strong> ${d.type}<br><strong>Full Name:</strong> ${d.fullName}`;
+
+            if (d.type === 'service') {
+                tooltipContent += `<br><strong>Lifetime:</strong> ${d.lifetime}`;
+
+                if (d.key) {
+                    tooltipContent += `<br><strong>Key:</strong> ${d.key}`;
                 }
-                
-                tooltip.html(tooltipContent)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 20) + "px")
-                    .style("opacity", 1);
-            })
+            
+                if (d.features && d.features.length > 0) {
+                    tooltipContent += `<br><strong>Features:</strong> <ul style="margin:2px 0 0 15px; padding:0">`;
+                    d.features.forEach(feature => {
+                        tooltipContent += `<li>${feature}</li>`;
+                    });
+                    tooltipContent += `</ul>`;
+                }
+            }
+
+            if (d.type === 'decorator') {
+                tooltipContent += `<br><strong>Order:</strong> ${d.order}`;
+            }
+
+            tooltip.html(tooltipContent)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 20) + "px")
+                .style("opacity", 1);
+        })
             .on("mouseout", function() {
                 d3.select("#tooltip").style("opacity", 0);
             })
-            .on("click", function(event, d) {
-                copyTextToClipboard(d.fullName);
-            });
-            
-            // Update positions on simulation tick
-            simulation.on("tick", () => {
-                link.attr("d", d => {
-                    const sourceX = d.source.x;
-                    const sourceY = d.source.y;
-                    const targetX = d.target.x;
-                    const targetY = d.target.y;
-                    
-                    return `M${sourceX},${sourceY}L${targetX},${targetY}`;
-                });
+            .on("contextmenu", function(event, d) {
+                // Prevent the default context menu
+                event.preventDefault();
                 
-                node.attr("transform", d => `translate(${d.x},${d.y})`);
+                // Store the current node data for the context menu actions
+                d3.select("#contextMenu").datum(d);
+                
+                // Position and show the context menu
+                d3.select("#contextMenu")
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY) + "px")
+                    .style("display", "block");
             });
-            
-            // Zoom functionality
-            const zoom = d3.zoom()
-                .scaleExtent([0.1, 3])
-                .on("zoom", (event) => {
-                    svg.attr("transform", event.transform);
-                });
-            
-            d3.select("#graph-container svg")
-                .call(zoom);
-            
-            // Drag functions
-            function dragstarted(event, d) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
-            
-            function dragged(event, d) {
-                d.fx = event.x;
-                d.fy = event.y;
-            }
-            
-            function dragended(event, d) {
-                if (!event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
-        }
-        
-        // Helper function to get short name from fully qualified name
-        function getShortName(fullName) {
-            if (!fullName) {
-                return "Unknown";
-            }
-            
-            return fullName.split('|')[0];
-        }
 
-        function getFullyQualifiedName(fullName) {
-            if (!fullName) {
-                return "Unknown";
-            }
+        // Update positions on simulation tick
+        simulation.on("tick", () => {
+            link.attr("d", d => {
+                const sourceX = d.source.x;
+                const sourceY = d.source.y;
+                const targetX = d.target.x;
+                const targetY = d.target.y;
 
-            return fullName.split('|')[1];
-        }
-        
-        // Helper function for copy to clipboard with graceful fallback and toast
-        function copyTextToClipboard(text) {
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(showCopyToast, showCopyToast);
-            } else {
-                // Fallback for old browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.position = 'fixed';  // Prevent scrolling to bottom
-                document.body.appendChild(textarea);
-                textarea.focus();
-                textarea.select();
-                try {
-                    document.execCommand('copy');
-                    showCopyToast();
-                } catch (err) {
-                    showCopyToast();
-                }
-                document.body.removeChild(textarea);
-            }
-        }
-        
-        // Show feedback toast
-        function showCopyToast() {
-            const toast = document.getElementById('copy-toast');
-            toast.classList.add('visible');
-            setTimeout(() => toast.classList.remove('visible'), 1100);
-        }
-        
-        // Create the graph when the document is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            createGraph(graphData);
-            
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                createGraph(graphData);
+                return `M${sourceX},${sourceY}L${targetX},${targetY}`;
             });
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
         });
-    </script>
+
+        // Zoom functionality
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 3])
+            .on("zoom", (event) => {
+                svg.attr("transform", event.transform);
+            });
+
+        d3.select("#graph-container svg")
+            .call(zoom);
+
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+    }
+
+    // Helper function to get short name from fully qualified name
+    function getShortName(fullName) {
+        if (!fullName) {
+            return "Unknown";
+        }
+        return  fullName.split('|')[0];
+    }
+    function getFullName(fullName) {
+        if (!fullName) {
+            return "Unknown";
+        }
+        return  fullName.split('|')[1];
+    }
+
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(
+            function() {
+                // Show success message
+                const copySuccess = document.getElementById('copySuccess');
+                copySuccess.style.opacity = 1;
+                
+                // Hide after 2 seconds
+                setTimeout(function() {
+                    copySuccess.style.opacity = 0;
+                }, 2000);
+            }
+        );
+    }
+    
+    // Create the graph when the document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        createGraph(graphData);
+        
+        // Set up the Copy Full Name context menu action
+        document.getElementById('copyFullName').addEventListener('click', function() {
+            const contextMenu = d3.select("#contextMenu");
+            const nodeData = contextMenu.datum();
+            if (nodeData && nodeData.fullName) {
+                copyToClipboard(nodeData.fullName);
+            }
+            contextMenu.style("display", "none");
+        });
+        
+        // Hide context menu when clicking elsewhere
+        document.addEventListener('click', function(event) {
+            const contextMenu = document.getElementById('contextMenu');
+            if (event.target.closest('#contextMenu') === null) {
+                contextMenu.style.display = 'none';
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            createGraph(graphData);
+        });
+    });
+</script>
 </body>
-</html>
