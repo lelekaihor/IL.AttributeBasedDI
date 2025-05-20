@@ -20,19 +20,22 @@ public enum Features
 }
 
 [Service<Features>(Feature = Features.FeatureA)]
-public class Test1
-{
-}
+public class Test1;
+
+[Decorator<Features>(Feature = Features.None)]
+public class Test1InactiveDecorator1(Test1 source) : Test1;
+
+[Decorator<Features>(Feature = Features.FeatureB)]
+public class Test1InactiveDecorator2(Test1 source) : Test1;
 
 [Service<Features>(Feature = Features.FeatureB)]
-public class Test2
-{
-}
+public class Test2;
 
 [Service<Features>(Feature = Features.FeatureC)]
-public class Test3
-{
-}
+public class Test3;
+
+[Decorator<Features>(Feature = Features.FeatureC)]
+public class Test3Decorator : Test3;
 
 public class FeatureEnabledAttributesTests
 {
@@ -64,16 +67,19 @@ public class FeatureEnabledAttributesTests
             }
         );
         var sp = serviceCollection.BuildServiceProvider();
-        
+
         // Assert
         var flagSet = sp.GetRequiredService<IOptions<FeatureFlagSet>>();
         Assert.NotNull(flagSet);
         var service1 = sp.GetRequiredService<Test1>();
+        Assert.True(service1 is not Test1InactiveDecorator1);
+        Assert.True(service1 is not Test1InactiveDecorator2);
         Assert.NotNull(service1);
         var service2 = sp.GetService<Test2>();
         Assert.Null(service2);
         var service3 = sp.GetService<Test3>();
         Assert.NotNull(service3);
+        Assert.True(service3 is Test3Decorator);
     }
 
     [Fact]
@@ -136,7 +142,7 @@ public class FeatureEnabledAttributesTests
         var service3 = sp.GetService<Test3>();
         Assert.NotNull(service3);
     }
-    
+
     [Fact]
     public void OnlyServiceWithActivatedFeaturesSuccessfullyRegistered_OptionsAction_Merge()
     {

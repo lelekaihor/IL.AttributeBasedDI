@@ -25,17 +25,19 @@ internal static class ServiceRegistrationHelper
     }
 
     public static Type? GetServiceTypeBasedOnDependencyInjectionAttribute<TFeatureFlag>(Type sourceType,
-        DependencyInjectionAttributeBase<TFeatureFlag> dependencyInjectionAttributeBase)
+        DependencyInjectionAttributeBase<TFeatureFlag> dependencyInjectionAttributeBase,
+        bool fallbackToBaseTypeOrSelf = false)
         where TFeatureFlag : struct, Enum
     {
         return dependencyInjectionAttributeBase.FindServiceTypeAutomatically
-            ? ExtractServiceTypeFromInterfaces(sourceType)
+            ? ExtractServiceTypeFromSupertypes(sourceType, fallbackToBaseTypeOrSelf)
             : dependencyInjectionAttributeBase.ServiceType;
     }
 
-    private static Type? ExtractServiceTypeFromInterfaces(Type sourceType)
+    private static Type? ExtractServiceTypeFromSupertypes(Type sourceType, bool fallbackToBaseTypeOrSelf)
     {
-        return sourceType.GetInterfaces().FirstOrDefault();
+        return sourceType.GetInterfaces().FirstOrDefault()
+               ?? (fallbackToBaseTypeOrSelf ? sourceType.BaseType ?? sourceType : null);
     }
 
     private static Type[] GetAllTypesFromAssemblies(IEnumerable<Assembly> assemblies)

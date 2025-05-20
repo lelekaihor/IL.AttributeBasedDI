@@ -31,7 +31,7 @@ internal static class DecoratorAttributeRegistration
                     decoratorAttribute!.Key,
                     decoratorAttribute.DecorationOrder,
                     decoratorAttribute.Feature,
-                    ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute),
+                    ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute, true),
                     DecoratorImplementationType = type,
                     decoratorAttribute.TreatOpenGenericsAsWildcard
                 };
@@ -59,7 +59,7 @@ internal static class DecoratorAttributeRegistration
                 throwWhenDecorationTypeNotFound);
             diRegistrationSummary.ServiceGraph.AddDecorator(serviceDecorationEntry.ServiceType,
                 serviceDecorationEntry.DecoratorImplementationType,
-                serviceDecorationEntry.Key, 
+                serviceDecorationEntry.Key,
                 serviceDecorationEntry.Feature,
                 serviceDecorationEntry.TreatOpenGenericsAsWildcard);
         }
@@ -176,22 +176,59 @@ internal static class DecoratorAttributeRegistration
             throw new ServiceDecorationException($"No services registered for type {serviceType.FullName} in ServiceCollection, Decoration is impossible.");
         }
 
-        var objectFactory = ActivatorUtilities.CreateFactory(decoratorImplementationType, [serviceType]);
         foreach (var descriptor in CollectionsMarshal.AsSpan(descriptorsToDecorate))
         {
-            serviceCollection.Replace(!string.IsNullOrEmpty(key)
+            var decoratorDescriptor = !string.IsNullOrEmpty(key)
                 ? ServiceDescriptor.DescribeKeyed(
                     serviceType,
                     IsWildcardKey(key) ? descriptor.ServiceKey!.ToString() : key,
-                    (serviceProvider, _) => objectFactory(serviceProvider, [serviceProvider.CreateInstance(descriptor)]),
+                    (serviceProvider, _) => CreateDecoratorInstance(serviceType, decoratorImplementationType, descriptor, serviceProvider),
                     descriptor.Lifetime
                 )
                 : ServiceDescriptor.Describe(
                     serviceType,
-                    implementationFactory => objectFactory(implementationFactory, [implementationFactory.CreateInstance(descriptor)]),
-                    descriptor.Lifetime)
-            );
+                    serviceProvider => CreateDecoratorInstance(serviceType, decoratorImplementationType, descriptor, serviceProvider),
+                    descriptor.Lifetime);
+            serviceCollection.Replace(decoratorDescriptor);
         }
+    }
+
+    private static object CreateDecoratorInstance(Type serviceType, Type decoratorImplementationType, ServiceDescriptor descriptor, IServiceProvider serviceProvider)
+    {
+        var hasOriginalImplementationInOneOfContstructorsParameters = decoratorImplementationType
+            .GetConstructors()
+            .SelectMany(c => c.GetParameters())
+            .Any(p => p.ParameterType == serviceType);
+
+        object?[] args;
+        Type[] paramTypes;
+
+        if (IsServiceTypeAndImplementationMatchingDescriptorServiceType(serviceType, descriptor))
+        {
+            // Prevent infinite loop by passing null if decorator depends on the same service type.
+            args = hasOriginalImplementationInOneOfContstructorsParameters ? [null] : [];
+            paramTypes = hasOriginalImplementationInOneOfContstructorsParameters ? [serviceType] : Type.EmptyTypes;
+        }
+        else
+        {
+            args = hasOriginalImplementationInOneOfContstructorsParameters ? [serviceProvider.CreateInstance(descriptor)] : [];
+            paramTypes = hasOriginalImplementationInOneOfContstructorsParameters ? [serviceType] : Type.EmptyTypes;
+        }
+
+        return ActivatorUtilities.CreateFactory(decoratorImplementationType, paramTypes)(serviceProvider, args);
+    }
+
+    /// <summary>
+    /// If we are decorating without interfaces and reusing same type as service type - that will cause infinite loop.
+    /// </summary>
+    /// <param name="serviceType"></param>
+    /// <param name="descriptor"></param>
+    /// <returns></returns>
+    private static bool IsServiceTypeAndImplementationMatchingDescriptorServiceType(Type serviceType, ServiceDescriptor descriptor)
+    {
+        return !serviceType.IsInterface
+               && descriptor.ServiceType == serviceType
+               && descriptor.ImplementationType == serviceType;
     }
 
     private static bool IsWildcardKey(string key)
