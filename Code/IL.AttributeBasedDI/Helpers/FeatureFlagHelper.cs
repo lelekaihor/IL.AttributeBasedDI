@@ -10,6 +10,6 @@ public static class FeatureFlagHelper
 
         return feature is FeaturesNoop ||
                featureValue != 0 // 0 stands for None
-               && activeFeatures.HasFlag(feature);
+               && (feature.HasFlag(activeFeatures) || activeFeatures.HasFlag(feature));
     }
 }

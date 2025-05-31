@@ -37,6 +37,9 @@ public class Test3;
 [Decorator<Features>(Feature = Features.FeatureC)]
 public class Test3Decorator : Test3;
 
+[Service<Features>(Feature = Features.FeatureA | Features.FeatureB)]
+public class TestMultipleFeatures;
+
 public class FeatureEnabledAttributesTests
 {
     [Fact]
@@ -168,5 +171,27 @@ public class FeatureEnabledAttributesTests
         Assert.Null(service2);
         var service3 = sp.GetService<Test3>();
         Assert.NotNull(service3);
+    }
+    
+    [Fact]
+    public void ServiceWithAtLeast1ActivatedFeaturesSuccessfullyRegistered_OptionsAction_Merge()
+    {
+        // Arrange
+        var serviceCollection = new ServiceCollection();
+
+
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options =>
+            {
+                options.AddFeature(Features.FeatureA);
+            }
+        );
+        var sp = serviceCollection.BuildServiceProvider();
+
+        // Assert
+        var service = sp.GetRequiredService<TestMultipleFeatures>();
+        Assert.NotNull(service);
     }
 }
