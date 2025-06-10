@@ -157,7 +157,7 @@ internal static class DecoratorAttributeRegistration
                 var valid = s.ServiceType == serviceType;
                 if (string.IsNullOrEmpty(key))
                 {
-                    return valid;
+                    return valid && !s.IsKeyedService;
                 }
 
                 var descriptorServiceKey = s.ServiceKey?.ToString();
